@@ -1,0 +1,25 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: brown;
+}
+#canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  margin: auto;
+}
+
+@media (orientation: landscape) {
+  #canvas {
+    height: 100%;
+  }
+}
+
+@media (orientation: portrait) {
+  #canvas {
+    width: 100%;
+  }
+}
