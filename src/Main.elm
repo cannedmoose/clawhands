@@ -2,15 +2,19 @@ module Main exposing (..)
 
 import Animation exposing (px)
 import Browser exposing (Document)
+import Browser.Dom as Dom
 import Browser.Events exposing (onAnimationFrameDelta)
 import Dict exposing (..)
 import Geometry.Svg as Svg
 import Html exposing (Html, button, div, text)
 import Html.Events exposing (onClick)
+import Math.Vector2 as Vec2
 import Point2d exposing (Point2d)
+import Random
 import Set exposing (..)
 import Svg exposing (Svg, clipPath, g, path, rect, svg)
 import Svg.Attributes as Attributes exposing (d, viewBox)
+import Task
 
 
 main : Program Flags Model Msg
@@ -31,22 +35,39 @@ type alias Flags =
 -- MODEL
 
 
-type alias Model =
-    { heartGroupStyle : Animation.State }
+type Model
+    = Initilizing
+    | Initilized ModelParams
+
+
+type alias ModelParams =
+    { heartGroupStyle : Animation.State
+    , lineStyles : List Animation.State
+    , viewport : Dom.Viewport
+    }
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( { heartGroupStyle =
-            heartAnimation initalHeart
-      }
-    , Cmd.none
+    ( Initilizing
+    , getViewPort
     )
+
+
+getViewPort : Cmd Msg
+getViewPort =
+    -- TODO Subscribe to viewport change so we can redo this
+    Task.attempt OnViewPort (Dom.getViewportOf "canvas")
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Animation.subscription OnAnimate [ model.heartGroupStyle ]
+    case model of
+        Initilizing ->
+            Sub.none
+
+        Initilized params ->
+            Animation.subscription OnAnimate (params.heartGroupStyle :: params.lineStyles)
 
 
 
@@ -54,22 +75,65 @@ subscriptions model =
 
 
 type Msg
-    = NoOp
+    = OnViewPort (Result Dom.Error Dom.Viewport)
     | OnAnimate Animation.Msg
+    | OnCanvasClick
+    | NewLineStyle Float
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        NoOp ->
-            ( model, Cmd.none )
+    case ( msg, model ) of
+        ( OnViewPort (Ok viewport), Initilizing ) ->
+            ( Initilized
+                { heartGroupStyle =
+                    heartAnimation initalHeart
+                , lineStyles = []
+                , viewport = viewport
+                }
+            , Cmd.none
+            )
 
-        OnAnimate animMsg ->
+        ( OnAnimate animMsg, Initilized m ) ->
             let
                 state =
-                    Animation.update animMsg model.heartGroupStyle
+                    Animation.update animMsg m.heartGroupStyle
+
+                lineStyles =
+                    List.map (Animation.update animMsg) m.lineStyles
             in
-            ( { model | heartGroupStyle = state }, Cmd.none )
+            ( Initilized { m | heartGroupStyle = state, lineStyles = lineStyles }, Cmd.none )
+
+        ( OnCanvasClick, Initilized params ) ->
+            let
+                { width, height } =
+                    params.viewport.scene
+            in
+            ( model, Random.generate NewLineStyle (seeder (2 * (width + height))) )
+
+        ( NewLineStyle seed, Initilized params ) ->
+            let
+                { width, height } =
+                    params.viewport.scene
+            in
+            ( Initilized { params | lineStyles = params.lineStyles ++ [ newLineStyle seed width height ] }
+            , Cmd.none
+            )
+
+        ( OnViewPort x, Initilized _ ) ->
+            let
+                _ =
+                    Debug.log "x " x
+            in
+            ( model, Cmd.none )
+
+        ( _, Initilizing ) ->
+            ( model, Cmd.none )
+
+
+seeder : Float -> Random.Generator Float
+seeder m =
+    Random.float 0 m
 
 
 
@@ -78,7 +142,12 @@ update msg model =
 
 view : Model -> Document Msg
 view model =
-    { title = "<3", body = [ viewPresent model ] }
+    case model of
+        Initilizing ->
+            { title = "<3", body = [ svg [ Attributes.id "canvas" ] [] ] }
+
+        Initilized params ->
+            { title = "<3", body = [ viewPresent params ] }
 
 
 
@@ -87,11 +156,58 @@ view model =
 -}
 
 
+newLineStyle : Float -> Float -> Float -> Animation.State
+newLineStyle seed width height =
+    -- TODO figure out points along a line
+    let
+        ( x, y ) =
+            if seed < width then
+                ( seed, 0 )
+
+            else if seed < width + height then
+                ( width, seed - width )
+
+            else if seed < 2 * width + height then
+                ( seed - width - height, height )
+
+            else
+                ( 0, seed - width * 2 - height )
+
+        v1 =
+            Vec2.vec2 x y
+
+        v2 =
+            Vec2.vec2 (width - x) (height - y)
+
+        direction =
+            Vec2.direction v1 v2
+
+        distance =
+            Vec2.distance v1 v2
+
+        ( x1, y1 ) =
+            Vec2.scale (distance * 0.1) direction
+                |> Vec2.add v1
+                |> Vec2.toRecord
+                |> (\a -> ( a.x, a.y ))
+
+        ( x2, y2 ) =
+            Vec2.scale -(distance * 0.1) direction
+                |> Vec2.add v2
+                |> Vec2.toRecord
+                |> (\a -> ( a.x, a.y ))
+    in
+    Animation.interrupt
+        [ Animation.to [ Animation.path [ Animation.moveTo x1 y1, Animation.lineTo x2 y2 ] ]
+        ]
+        (Animation.style [ Animation.path [ Animation.moveTo x1 y1, Animation.lineTo x1 y1 ] ])
+
+
 initalHeart : Animation.State
 initalHeart =
     Animation.style
         [ Animation.scale 1
-        , Animation.rotate (Animation.deg 0)
+        , Animation.rotate3d (Animation.deg 0) (Animation.deg 0) (Animation.deg 0)
         ]
 
 
@@ -99,127 +215,156 @@ heartAnimation : Animation.State -> Animation.State
 heartAnimation style =
     Animation.interrupt
         [ Animation.loop
-            [ Animation.to [ Animation.scale 0.5, Animation.rotate (Animation.deg 180) ]
-            , Animation.set [ Animation.rotate (Animation.deg -180) ]
-            , Animation.to [ Animation.scale 1, Animation.rotate (Animation.deg 0) ]
+            [ Animation.to
+                [ Animation.scale 0.5
+                , Animation.rotate3d (Animation.deg 0) (Animation.deg 0) (Animation.deg 90)
+                ]
+            , Animation.to
+                [ Animation.scale 1
+                , Animation.rotate3d (Animation.deg 0) (Animation.deg 0) (Animation.deg 180)
+                ]
+            , Animation.to
+                [ Animation.scale 0.5
+                , Animation.rotate3d (Animation.deg 0) (Animation.deg 0) (Animation.deg 270)
+                ]
+            , Animation.to
+                [ Animation.scale 1
+                , Animation.rotate3d (Animation.deg 0) (Animation.deg 0) (Animation.deg 360)
+                ]
+            , Animation.set
+                [ Animation.rotate3d (Animation.deg 0) (Animation.deg 0) (Animation.deg 0)
+                ]
             ]
         ]
         style
 
 
-viewPresent : Model -> Html Msg
+viewPresent : ModelParams -> Html Msg
 viewPresent model =
     svg
-        [ viewBox "0 0 100 100"
-        , Attributes.id "canvas"
+        [ Attributes.id "canvas"
+        , onClick OnCanvasClick
         ]
-        [ rect [ Attributes.width "100%", Attributes.height "100%", Attributes.fill "brown" ] []
-        , clipPath
-            [ Attributes.id "boxclip" ]
-            [ rect
-                [ Attributes.width "85"
-                , Attributes.height "85"
-                , Attributes.x "7.25"
-                , Attributes.y "7.25"
-                ]
-                []
-            ]
-        , rect
-            [ Attributes.width "85"
-            , Attributes.height "85"
-            , Attributes.x "7.25"
-            , Attributes.y "7.25"
-            , Attributes.fill "yellowgreen"
-            , Attributes.stroke "black"
-            , Attributes.strokeWidth "1"
-            ]
+        [ g
             []
+            (List.range
+                0
+                40
+                |> List.map
+                    (heartX
+                        model
+                    )
+            )
         , g
-            [ Attributes.clipPath "url(#boxclip)" ]
-            [ -- Hearts
-              g [ Attributes.transform "translate(50, 50)" ]
-                [ g (Animation.render model.heartGroupStyle)
-                    [ g [ Attributes.transform "translate(-50, -50)" ]
-                        [ heart "lightblue"
-                            |> Svg.scaleAbout
-                                (Point2d.pixels 50 50)
-                                4
-                        , heart "yellowgreen"
-                            |> Svg.scaleAbout
-                                (Point2d.pixels 50 50)
-                                3
-                        , heart "lightblue"
-                            |> Svg.scaleAbout
-                                (Point2d.pixels 50 50)
-                                2
-                        , heart "yellowgreen"
-                            |> Svg.scaleAbout
-                                (Point2d.pixels 50 50)
-                                0.75
-                        , heart "lightblue"
-                            |> Svg.scaleAbout
-                                (Point2d.pixels 50 50)
-                                0.25
-                        ]
-                    ]
-                ]
-            ]
-        , -- Ribbons TODO consider gradient fill to pretend we have lighting...
-          g [ Attributes.transform "translate (7.25 7.25) scale(.85)" ]
-            [ g []
-                [ g
-                    [ Attributes.fill "red", Attributes.stroke "darkred", Attributes.strokeWidth "1" ]
-                    [ rect
-                        [ Attributes.width "12"
-                        , Attributes.height "101"
-                        , Attributes.x "44"
-                        , Attributes.y "-.5"
-                        , Attributes.rx ".1"
-                        ]
-                        []
-                    , path
-                        [ d ("""
-                            M -.5 -.5
-                            L 8.5 -.5
-                            L 100.5 """ ++ String.fromFloat (100.5 - 8.5) ++ """
-                            L 100.5 100.5
-                            L """ ++ String.fromFloat (100.5 - 8.5) ++ """ 100.5
-                            L -.5 8.5
-                            z
-                        """)
-                        ]
-                        []
-                    , path
-                        [ d ("""
-                            M -.5 100.5
-                            L -.5 """ ++ String.fromFloat (100.5 - 8.5) ++ """
-                            L """ ++ String.fromFloat (100 - 8.5) ++ """ -.5
-                            L 100.5 -.5
-                            L 100.5 8.5
-                            L 8.5 100.5
-                            z
-                        """)
-                        ]
-                        []
-                    , rect
-                        [ Attributes.height "12"
-                        , Attributes.width "101"
-                        , Attributes.y "44"
-                        , Attributes.x "-.5"
-                        , Attributes.rx ".1"
-                        ]
-                        []
-                    ]
-                ]
-            ]
-        , ribbon
+            []
+            (List.map
+                (drawLine model)
+                model.lineStyles
+            )
         ]
 
 
-ribbon =
-    g
+drawLine : ModelParams -> Animation.State -> Html Msg
+drawLine { viewport } style =
+    let
+        { width, height } =
+            viewport.viewport
+
+        longDim =
+            max width height
+
+        strokeWidth =
+            (longDim / 5.0) |> String.fromFloat
+    in
+    path
+        ([ Attributes.stroke "red", Attributes.strokeWidth strokeWidth ]
+            ++ Animation.render style
+        )
         []
-        []
+
+
+
+{- Always want hearts to be x*y so scale them so that many fit in each direction
+
+   Base it on long direction
+   should fit 6 across there
+-}
+
+
+heartX : ModelParams -> Int -> Html Msg
+heartX { viewport, heartGroupStyle } number =
+    let
+        { width, height } =
+            viewport.viewport
+
+        longDim =
+            max width height
+
+        rot =
+            (if modBy 2 number == 0 then
+                180.0
+
+             else
+                0.0
+            )
+                |> String.fromFloat
+
+        heartSize =
+            longDim / 6
+
+        rowsWide =
+            ceiling (width / heartSize) + 1
+
+        col =
+            number // rowsWide
+
+        row =
+            modBy rowsWide number
+
+        scaleFactor =
+            heartSize / heartDims |> String.fromFloat
+
+        x =
+            toFloat row
+                * heartDims
+                |> String.fromFloat
+
+        y =
+            toFloat col
+                * heartDims
+                |> String.fromFloat
+    in
+    g [ Attributes.transform ("scale(" ++ scaleFactor ++ ") translate(" ++ x ++ ", " ++ y ++ ") rotate(" ++ rot ++ " 0 0)") ]
+        [ g (Animation.render heartGroupStyle) [ hearts ] ]
+
+
+heartDims : Float
+heartDims =
+    -- NOTE CAN ADJUST TO SCALE HEART
+    300
+
+
+hearts : Html Msg
+hearts =
+    --Heart centered and about 300*300 Px
+    g [ Attributes.transform "translate(-50, -50)" ]
+        [ heart "yellowgreen"
+            |> Svg.scaleAbout
+                (Point2d.pixels 50 50)
+                3
+        , heart "lightblue"
+            |> Svg.scaleAbout
+                (Point2d.pixels 50 50)
+                2
+        , heart "yellowgreen"
+            |> Svg.scaleAbout
+                (Point2d.pixels 50 50)
+                1
+        , heart "lightblue"
+            |> Svg.scaleAbout
+                (Point2d.pixels 50 50)
+                0.25
+        ]
 
 
 heart : String -> Html Msg
