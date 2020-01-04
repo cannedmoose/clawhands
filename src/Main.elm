@@ -233,6 +233,48 @@ viewPresent model =
         ]
 
 
+pathWithWidth : Vec2.Vec2 -> Vec2.Vec2 -> Float -> Animation.Property
+pathWithWidth a b width =
+    let
+        direction =
+            Vec2.direction a b
+
+        perp =
+            Vec2.toRecord direction
+                |> (\v -> Vec2.fromRecord { x = -v.y, y = v.x })
+                |> Vec2.normalize
+
+        toTuple v =
+            Vec2.toRecord v
+                |> (\f -> ( f.x, f.y ))
+
+        distance =
+            Vec2.distance a b
+
+        ( x1, y1 ) =
+            Vec2.scale (distance * 0.2) direction
+                |> Vec2.add a
+                |> Vec2.add (Vec2.scale width perp)
+                |> toTuple
+
+        ( x2, y2 ) =
+            Vec2.scale (distance * 0.2) direction
+                |> Vec2.add a
+                |> Vec2.add (Vec2.scale -width perp)
+                |> toTuple
+
+        ( x3, y3 ) =
+            Vec2.scale -(distance * 0.2) direction
+                |> Vec2.add b
+                |> Vec2.add (Vec2.scale -width perp)
+                |> toTuple
+
+        ( x4, y4 ) =
+            Vec2.scale -(distance * 0.2) direction
+                |> Vec2.add b
+                |> Vec2.add (Vec2.scale width perp)
+                |> toTuple
+
 drawLine : ModelParams -> Line -> Html Msg
 drawLine { viewport } { start, anim } =
     let
