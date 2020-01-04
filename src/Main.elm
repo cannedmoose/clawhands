@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Animation exposing (px)
+import Animation as Anim
 import Browser exposing (Document)
 import Browser.Dom as Dom
 import Browser.Events exposing (onAnimationFrameDelta)
@@ -41,10 +41,15 @@ type Model
 
 
 type alias ModelParams =
-    { heartGroupStyle : Animation.State
-    , lineStyles : List Animation.State
+    { heartAnim : Anim.Animation
+    , lineStyles : List Line
     , viewport : Dom.Viewport
+    , time : Float
     }
+
+
+type alias Line =
+    { anim : Anim.Animation, start : Vec2.Vec2 }
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -67,7 +72,7 @@ subscriptions model =
             Sub.none
 
         Initilized params ->
-            Animation.subscription OnAnimate (params.heartGroupStyle :: params.lineStyles)
+            Browser.Events.onAnimationFrameDelta OnAnimate
 
 
 
@@ -76,7 +81,7 @@ subscriptions model =
 
 type Msg
     = OnViewPort (Result Dom.Error Dom.Viewport)
-    | OnAnimate Animation.Msg
+    | OnAnimate Float
     | OnCanvasClick
     | NewLineStyle Float
 
@@ -86,23 +91,31 @@ update msg model =
     case ( msg, model ) of
         ( OnViewPort (Ok viewport), Initilizing ) ->
             ( Initilized
-                { heartGroupStyle =
-                    heartAnimation initalHeart
+                { heartAnim = initalHeart 0
                 , lineStyles = []
                 , viewport = viewport
+                , time = 0
                 }
             , Cmd.none
             )
 
-        ( OnAnimate animMsg, Initilized m ) ->
+        ( OnAnimate delta, Initilized m ) ->
             let
-                state =
-                    Animation.update animMsg m.heartGroupStyle
+                { time, heartAnim } =
+                    m
 
-                lineStyles =
-                    List.map (Animation.update animMsg) m.lineStyles
+                newTime =
+                    time + delta
+
+                newHeartAnim =
+                    if Anim.isDone newTime heartAnim then
+                        Anim.undo time heartAnim
+                        -- Todo Reset animation
+
+                    else
+                        heartAnim
             in
-            ( Initilized { m | heartGroupStyle = state, lineStyles = lineStyles }, Cmd.none )
+            ( Initilized { m | time = newTime, heartAnim = newHeartAnim }, Cmd.none )
 
         ( OnCanvasClick, Initilized params ) ->
             let
@@ -116,7 +129,7 @@ update msg model =
                 { width, height } =
                     params.viewport.scene
             in
-            ( Initilized { params | lineStyles = params.lineStyles ++ [ newLineStyle seed width height ] }
+            ( Initilized { params | lineStyles = params.lineStyles ++ [ newLineStyle params.time seed width height ] }
             , Cmd.none
             )
 
@@ -156,8 +169,8 @@ view model =
 -}
 
 
-newLineStyle : Float -> Float -> Float -> Animation.State
-newLineStyle seed width height =
+newLineStyle : Float -> Float -> Float -> Float -> Line
+newLineStyle time seed width height =
     -- TODO figure out points along a line
     let
         ( x, y ) =
@@ -175,68 +188,24 @@ newLineStyle seed width height =
 
         v1 =
             Vec2.vec2 x y
-
-        v2 =
-            Vec2.vec2 (width - x) (height - y)
-
-        direction =
-            Vec2.direction v1 v2
-
-        distance =
-            Vec2.distance v1 v2
-
-        ( x1, y1 ) =
-            Vec2.scale (distance * 0.1) direction
-                |> Vec2.add v1
-                |> Vec2.toRecord
-                |> (\a -> ( a.x, a.y ))
-
-        ( x2, y2 ) =
-            Vec2.scale -(distance * 0.1) direction
-                |> Vec2.add v2
-                |> Vec2.toRecord
-                |> (\a -> ( a.x, a.y ))
     in
-    Animation.interrupt
-        [ Animation.to [ Animation.path [ Animation.moveTo x1 y1, Animation.lineTo x2 y2 ] ]
-        ]
-        (Animation.style [ Animation.path [ Animation.moveTo x1 y1, Animation.lineTo x1 y1 ] ])
+    -- Todo actual animation here
+    { start = v1, anim = Anim.animation time }
 
 
-initalHeart : Animation.State
-initalHeart =
-    Animation.style
-        [ Animation.scale 1
-        , Animation.rotate3d (Animation.deg 0) (Animation.deg 0) (Animation.deg 0)
-        ]
+initalHeart : Float -> Anim.Animation
+initalHeart time =
+    Anim.animation time
 
 
-heartAnimation : Animation.State -> Animation.State
-heartAnimation style =
-    Animation.interrupt
-        [ Animation.loop
-            [ Animation.to
-                [ Animation.scale 0.5
-                , Animation.rotate3d (Animation.deg 0) (Animation.deg 0) (Animation.deg 90)
-                ]
-            , Animation.to
-                [ Animation.scale 1
-                , Animation.rotate3d (Animation.deg 0) (Animation.deg 0) (Animation.deg 180)
-                ]
-            , Animation.to
-                [ Animation.scale 0.5
-                , Animation.rotate3d (Animation.deg 0) (Animation.deg 0) (Animation.deg 270)
-                ]
-            , Animation.to
-                [ Animation.scale 1
-                , Animation.rotate3d (Animation.deg 0) (Animation.deg 0) (Animation.deg 360)
-                ]
-            , Animation.set
-                [ Animation.rotate3d (Animation.deg 0) (Animation.deg 0) (Animation.deg 0)
-                ]
-            ]
-        ]
-        style
+heartStyle : Float -> Anim.Animation -> List (Html.Attribute Msg)
+heartStyle time anim =
+    let
+        val =
+            Anim.animate time anim
+    in
+    [ Attributes.transform ("scale(" ++ String.fromFloat val ++ ")")
+    ]
 
 
 viewPresent : ModelParams -> Html Msg
@@ -264,8 +233,8 @@ viewPresent model =
         ]
 
 
-drawLine : ModelParams -> Animation.State -> Html Msg
-drawLine { viewport } style =
+drawLine : ModelParams -> Line -> Html Msg
+drawLine { viewport } { start, anim } =
     let
         { width, height } =
             viewport.viewport
@@ -275,11 +244,31 @@ drawLine { viewport } style =
 
         strokeWidth =
             (longDim / 5.0) |> String.fromFloat
+
+        end =
+            Vec2.sub (Vec2.vec2 width height) start
+
+        direction =
+            Vec2.direction start end
+
+        distance =
+            Vec2.distance start end
+
+        ( x1, y1 ) =
+            Vec2.scale (distance * 0.1) direction
+                |> Vec2.add start
+                |> Vec2.toRecord
+                |> (\a -> ( a.x, a.y ))
+
+        ( x2, y2 ) =
+            Vec2.scale -(distance * 0.1) direction
+                |> Vec2.add end
+                |> Vec2.toRecord
+                |> (\a -> ( a.x, a.y ))
     in
+    -- TODO CREATE PATH
     path
-        ([ Attributes.stroke "red", Attributes.strokeWidth strokeWidth ]
-            ++ Animation.render style
-        )
+        []
         []
 
 
@@ -292,7 +281,7 @@ drawLine { viewport } style =
 
 
 heartX : ModelParams -> Int -> Html Msg
-heartX { viewport, heartGroupStyle } number =
+heartX { viewport, heartAnim, time } number =
     let
         { width, height } =
             viewport.viewport
@@ -335,7 +324,7 @@ heartX { viewport, heartGroupStyle } number =
                 |> String.fromFloat
     in
     g [ Attributes.transform ("scale(" ++ scaleFactor ++ ") translate(" ++ x ++ ", " ++ y ++ ") rotate(" ++ rot ++ " 0 0)") ]
-        [ g (Animation.render heartGroupStyle) [ hearts ] ]
+        [ g (heartStyle time heartAnim) [ hearts ] ]
 
 
 heartDims : Float
