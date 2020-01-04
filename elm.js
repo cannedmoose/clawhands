@@ -12076,53 +12076,8 @@ var $elm$svg$Svg$Attributes$id = _VirtualDom_attribute('id');
 var $elm$svg$Svg$trustedNode = _VirtualDom_nodeNS('http://www.w3.org/2000/svg');
 var $elm$svg$Svg$svg = $elm$svg$Svg$trustedNode('svg');
 var $author$project$Main$OnCanvasClick = {$: 'OnCanvasClick'};
-var $elm_explorations$linear_algebra$Math$Vector2$add = _MJS_v2add;
-var $elm_explorations$linear_algebra$Math$Vector2$direction = _MJS_v2direction;
-var $elm_explorations$linear_algebra$Math$Vector2$distance = _MJS_v2distance;
-var $elm$svg$Svg$path = $elm$svg$Svg$trustedNode('path');
-var $elm_explorations$linear_algebra$Math$Vector2$scale = _MJS_v2scale;
-var $elm_explorations$linear_algebra$Math$Vector2$sub = _MJS_v2sub;
-var $elm_explorations$linear_algebra$Math$Vector2$toRecord = _MJS_v2toRecord;
-var $author$project$Main$drawLine = F2(
-	function (_v0, _v1) {
-		var viewport = _v0.viewport;
-		var start = _v1.start;
-		var anim = _v1.anim;
-		var _v2 = viewport.viewport;
-		var width = _v2.width;
-		var height = _v2.height;
-		var end = A2(
-			$elm_explorations$linear_algebra$Math$Vector2$sub,
-			A2($elm_explorations$linear_algebra$Math$Vector2$vec2, width, height),
-			start);
-		var direction = A2($elm_explorations$linear_algebra$Math$Vector2$direction, start, end);
-		var distance = A2($elm_explorations$linear_algebra$Math$Vector2$distance, start, end);
-		var _v3 = function (a) {
-			return _Utils_Tuple2(a.x, a.y);
-		}(
-			$elm_explorations$linear_algebra$Math$Vector2$toRecord(
-				A2(
-					$elm_explorations$linear_algebra$Math$Vector2$add,
-					start,
-					A2($elm_explorations$linear_algebra$Math$Vector2$scale, distance * 0.1, direction))));
-		var x1 = _v3.a;
-		var y1 = _v3.b;
-		var _v4 = function (a) {
-			return _Utils_Tuple2(a.x, a.y);
-		}(
-			$elm_explorations$linear_algebra$Math$Vector2$toRecord(
-				A2(
-					$elm_explorations$linear_algebra$Math$Vector2$add,
-					end,
-					A2($elm_explorations$linear_algebra$Math$Vector2$scale, -(distance * 0.1), direction))));
-		var x2 = _v4.a;
-		var y2 = _v4.b;
-		var longDim = A2($elm$core$Basics$max, width, height);
-		var strokeWidth = $elm$core$String$fromFloat(longDim / 5.0);
-		return A2($elm$svg$Svg$path, _List_Nil, _List_Nil);
-	});
-var $elm$svg$Svg$g = $elm$svg$Svg$trustedNode('g');
-var $author$project$Main$heartDims = 300;
+var $elm$svg$Svg$clipPath = $elm$svg$Svg$trustedNode('clipPath');
+var $elm$svg$Svg$Attributes$clipPath = _VirtualDom_attribute('clip-path');
 var $elm$core$Basics$clamp = F3(
 	function (low, high, number) {
 		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
@@ -12151,6 +12106,98 @@ var $mgold$elm_animation$Animation$animate = F2(
 		}();
 		return (from_ + ((to_ - from_) * eased)) + correction;
 	});
+var $elm$svg$Svg$Attributes$d = _VirtualDom_attribute('d');
+var $elm$svg$Svg$path = $elm$svg$Svg$trustedNode('path');
+var $elm_explorations$linear_algebra$Math$Vector2$add = _MJS_v2add;
+var $elm_explorations$linear_algebra$Math$Vector2$direction = _MJS_v2direction;
+var $elm_explorations$linear_algebra$Math$Vector2$distance = _MJS_v2distance;
+var $elm_explorations$linear_algebra$Math$Vector2$fromRecord = _MJS_v2fromRecord;
+var $elm_explorations$linear_algebra$Math$Vector2$getX = _MJS_v2getX;
+var $elm_explorations$linear_algebra$Math$Vector2$getY = _MJS_v2getY;
+var $elm_explorations$linear_algebra$Math$Vector2$normalize = _MJS_v2normalize;
+var $elm_explorations$linear_algebra$Math$Vector2$scale = _MJS_v2scale;
+var $elm_explorations$linear_algebra$Math$Vector2$sub = _MJS_v2sub;
+var $elm_explorations$linear_algebra$Math$Vector2$toRecord = _MJS_v2toRecord;
+var $author$project$Main$pathD = F4(
+	function (start, end, width, completion) {
+		var toTuple = function (v) {
+			return function (f) {
+				return _Utils_Tuple2(f.x, f.y);
+			}(
+				$elm_explorations$linear_algebra$Math$Vector2$toRecord(v));
+		};
+		var pointToString = function (p) {
+			return $elm$core$String$fromFloat(
+				$elm_explorations$linear_algebra$Math$Vector2$getX(p)) + (' ' + $elm$core$String$fromFloat(
+				$elm_explorations$linear_algebra$Math$Vector2$getY(p)));
+		};
+		var distance = A2($elm_explorations$linear_algebra$Math$Vector2$distance, start, end) + (2 * width);
+		var direction = A2($elm_explorations$linear_algebra$Math$Vector2$direction, start, end);
+		var perp = $elm_explorations$linear_algebra$Math$Vector2$normalize(
+			function (v) {
+				return $elm_explorations$linear_algebra$Math$Vector2$fromRecord(
+					{x: -v.y, y: v.x});
+			}(
+				$elm_explorations$linear_algebra$Math$Vector2$toRecord(direction)));
+		var realEnd = A2(
+			$elm_explorations$linear_algebra$Math$Vector2$sub,
+			end,
+			A2($elm_explorations$linear_algebra$Math$Vector2$scale, width, direction));
+		var realStart = A2(
+			$elm_explorations$linear_algebra$Math$Vector2$add,
+			start,
+			A2($elm_explorations$linear_algebra$Math$Vector2$scale, width, direction));
+		var p1 = A2(
+			$elm_explorations$linear_algebra$Math$Vector2$add,
+			realStart,
+			A2($elm_explorations$linear_algebra$Math$Vector2$scale, width, perp));
+		var p2 = A2(
+			$elm_explorations$linear_algebra$Math$Vector2$add,
+			realStart,
+			A2($elm_explorations$linear_algebra$Math$Vector2$scale, -width, perp));
+		var currentDistance = distance * completion;
+		var p3 = A2(
+			$elm_explorations$linear_algebra$Math$Vector2$sub,
+			p2,
+			A2($elm_explorations$linear_algebra$Math$Vector2$scale, currentDistance, direction));
+		var p4 = A2(
+			$elm_explorations$linear_algebra$Math$Vector2$sub,
+			p1,
+			A2($elm_explorations$linear_algebra$Math$Vector2$scale, currentDistance, direction));
+		return 'M ' + (pointToString(p1) + (' L ' + (pointToString(p2) + (' L ' + (pointToString(p3) + (' L ' + (pointToString(p4) + ' Z')))))));
+	});
+var $author$project$Main$drawLine = F2(
+	function (_v0, _v1) {
+		var viewport = _v0.viewport;
+		var time = _v0.time;
+		var start = _v1.start;
+		var anim = _v1.anim;
+		var _v2 = viewport.viewport;
+		var width = _v2.width;
+		var height = _v2.height;
+		var end = A2(
+			$elm_explorations$linear_algebra$Math$Vector2$sub,
+			A2($elm_explorations$linear_algebra$Math$Vector2$vec2, width, height),
+			start);
+		var longDim = A2($elm$core$Basics$max, width, height);
+		var strokeWidth = longDim / 5.0;
+		return A2(
+			$elm$svg$Svg$path,
+			_List_fromArray(
+				[
+					$elm$svg$Svg$Attributes$d(
+					A4(
+						$author$project$Main$pathD,
+						start,
+						end,
+						strokeWidth,
+						A2($mgold$elm_animation$Animation$animate, time, anim)))
+				]),
+			_List_Nil);
+	});
+var $elm$svg$Svg$Attributes$fill = _VirtualDom_attribute('fill');
+var $elm$svg$Svg$g = $elm$svg$Svg$trustedNode('g');
+var $author$project$Main$heartDims = 300;
 var $elm$svg$Svg$Attributes$transform = _VirtualDom_attribute('transform');
 var $author$project$Main$heartStyle = F2(
 	function (time, anim) {
@@ -12161,8 +12208,6 @@ var $author$project$Main$heartStyle = F2(
 				'scale(' + ($elm$core$String$fromFloat(val) + ')'))
 			]);
 	});
-var $elm$svg$Svg$Attributes$d = _VirtualDom_attribute('d');
-var $elm$svg$Svg$Attributes$fill = _VirtualDom_attribute('fill');
 var $author$project$Main$heartPath = 'M 10,30\n    A 20,20 0,0,1 50,30\n    A 20,20 0,0,1 90,30\n    Q 90,60 50,90\n    Q 10,60 10,30 z';
 var $author$project$Main$heart = function (fill) {
 	return A2(
@@ -12221,38 +12266,41 @@ var $ianmackenzie$elm_geometry_svg$Geometry$Svg$scaleAbout = F3(
 			_List_fromArray(
 				[element]));
 	});
-var $author$project$Main$hearts = A2(
-	$elm$svg$Svg$g,
-	_List_fromArray(
-		[
-			$elm$svg$Svg$Attributes$transform('translate(-50, -50)')
-		]),
-	_List_fromArray(
-		[
-			A3(
-			$ianmackenzie$elm_geometry_svg$Geometry$Svg$scaleAbout,
-			A2($ianmackenzie$elm_geometry$Point2d$pixels, 50, 50),
-			3,
-			$author$project$Main$heart('yellowgreen')),
-			A3(
-			$ianmackenzie$elm_geometry_svg$Geometry$Svg$scaleAbout,
-			A2($ianmackenzie$elm_geometry$Point2d$pixels, 50, 50),
-			2,
-			$author$project$Main$heart('lightblue')),
-			A3(
-			$ianmackenzie$elm_geometry_svg$Geometry$Svg$scaleAbout,
-			A2($ianmackenzie$elm_geometry$Point2d$pixels, 50, 50),
-			1,
-			$author$project$Main$heart('yellowgreen')),
-			A3(
-			$ianmackenzie$elm_geometry_svg$Geometry$Svg$scaleAbout,
-			A2($ianmackenzie$elm_geometry$Point2d$pixels, 50, 50),
-			0.25,
-			$author$project$Main$heart('lightblue'))
-		]));
+var $author$project$Main$hearts = F2(
+	function (color1, color2) {
+		return A2(
+			$elm$svg$Svg$g,
+			_List_fromArray(
+				[
+					$elm$svg$Svg$Attributes$transform('translate(-50, -50)')
+				]),
+			_List_fromArray(
+				[
+					A3(
+					$ianmackenzie$elm_geometry_svg$Geometry$Svg$scaleAbout,
+					A2($ianmackenzie$elm_geometry$Point2d$pixels, 50, 50),
+					3,
+					$author$project$Main$heart(color1)),
+					A3(
+					$ianmackenzie$elm_geometry_svg$Geometry$Svg$scaleAbout,
+					A2($ianmackenzie$elm_geometry$Point2d$pixels, 50, 50),
+					2,
+					$author$project$Main$heart(color2)),
+					A3(
+					$ianmackenzie$elm_geometry_svg$Geometry$Svg$scaleAbout,
+					A2($ianmackenzie$elm_geometry$Point2d$pixels, 50, 50),
+					1,
+					$author$project$Main$heart(color1)),
+					A3(
+					$ianmackenzie$elm_geometry_svg$Geometry$Svg$scaleAbout,
+					A2($ianmackenzie$elm_geometry$Point2d$pixels, 50, 50),
+					0.25,
+					$author$project$Main$heart(color2))
+				]));
+	});
 var $elm$core$Basics$modBy = _Basics_modBy;
-var $author$project$Main$heartX = F2(
-	function (_v0, number) {
+var $author$project$Main$heartX = F4(
+	function (_v0, color1, color2, number) {
 		var viewport = _v0.viewport;
 		var heartAnim = _v0.heartAnim;
 		var time = _v0.time;
@@ -12281,9 +12329,16 @@ var $author$project$Main$heartX = F2(
 					$elm$svg$Svg$g,
 					A2($author$project$Main$heartStyle, time, heartAnim),
 					_List_fromArray(
-						[$author$project$Main$hearts]))
+						[
+							A2($author$project$Main$hearts, color1, color2)
+						]))
 				]));
 	});
+var $elm$svg$Svg$Attributes$height = _VirtualDom_attribute('height');
+var $elm$svg$Svg$rect = $elm$svg$Svg$trustedNode('rect');
+var $elm$svg$Svg$Attributes$width = _VirtualDom_attribute('width');
+var $elm$svg$Svg$Attributes$x = _VirtualDom_attribute('x');
+var $elm$svg$Svg$Attributes$y = _VirtualDom_attribute('y');
 var $author$project$Main$viewPresent = function (model) {
 	return A2(
 		$elm$svg$Svg$svg,
@@ -12292,23 +12347,48 @@ var $author$project$Main$viewPresent = function (model) {
 				$elm$svg$Svg$Attributes$id('canvas'),
 				$elm$html$Html$Events$onClick($author$project$Main$OnCanvasClick)
 			]),
-		_List_fromArray(
-			[
-				A2(
+		A2(
+			$elm$core$List$cons,
+			A2(
 				$elm$svg$Svg$g,
 				_List_Nil,
 				A2(
 					$elm$core$List$map,
-					$author$project$Main$heartX(model),
+					A3($author$project$Main$heartX, model, 'yellowgreen', 'lightblue'),
 					A2($elm$core$List$range, 0, 40))),
-				A2(
-				$elm$svg$Svg$g,
-				_List_Nil,
-				A2(
-					$elm$core$List$map,
-					$author$project$Main$drawLine(model),
-					model.lineStyles))
-			]));
+			$elm$core$List$isEmpty(model.lineStyles) ? _List_Nil : _List_fromArray(
+				[
+					A2(
+					$elm$svg$Svg$clipPath,
+					_List_fromArray(
+						[
+							$elm$svg$Svg$Attributes$id('foreground-clip')
+						]),
+					A2(
+						$elm$core$List$map,
+						$author$project$Main$drawLine(model),
+						model.lineStyles)),
+					A2(
+					$elm$svg$Svg$g,
+					_List_fromArray(
+						[
+							$elm$svg$Svg$Attributes$clipPath('url(#foreground-clip)')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$svg$Svg$rect,
+							_List_fromArray(
+								[
+									$elm$svg$Svg$Attributes$fill('red'),
+									$elm$svg$Svg$Attributes$width('100%'),
+									$elm$svg$Svg$Attributes$height('100%'),
+									$elm$svg$Svg$Attributes$x('0'),
+									$elm$svg$Svg$Attributes$y('0')
+								]),
+							_List_Nil)
+						]))
+				])));
 };
 var $author$project$Main$view = function (model) {
 	if (model.$ === 'Initilizing') {

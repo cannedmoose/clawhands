@@ -251,11 +251,11 @@ viewPresent model =
         )
 
 
-pathWithWidth : Vec2.Vec2 -> Vec2.Vec2 -> Float -> Animation.Property
-pathWithWidth a b width =
+pathD : Vec2.Vec2 -> Vec2.Vec2 -> Float -> Float -> String
+pathD start end width completion =
     let
         direction =
-            Vec2.direction a b
+            Vec2.direction start end
 
         perp =
             Vec2.toRecord direction
@@ -267,34 +267,45 @@ pathWithWidth a b width =
                 |> (\f -> ( f.x, f.y ))
 
         distance =
-            Vec2.distance a b
+            Vec2.distance start end + 2 * width
 
-        ( x1, y1 ) =
-            Vec2.scale (distance * 0.2) direction
-                |> Vec2.add a
-                |> Vec2.add (Vec2.scale width perp)
-                |> toTuple
+        currentDistance =
+            distance * completion
 
-        ( x2, y2 ) =
-            Vec2.scale (distance * 0.2) direction
-                |> Vec2.add a
-                |> Vec2.add (Vec2.scale -width perp)
-                |> toTuple
+        realStart =
+            Vec2.add start (Vec2.scale width direction)
 
-        ( x3, y3 ) =
-            Vec2.scale -(distance * 0.2) direction
-                |> Vec2.add b
-                |> Vec2.add (Vec2.scale -width perp)
-                |> toTuple
+        realEnd =
+            Vec2.sub end (Vec2.scale width direction)
 
-        ( x4, y4 ) =
-            Vec2.scale -(distance * 0.2) direction
-                |> Vec2.add b
-                |> Vec2.add (Vec2.scale width perp)
-                |> toTuple
+        p1 =
+            Vec2.add realStart (Vec2.scale width perp)
+
+        p2 =
+            Vec2.add realStart (Vec2.scale -width perp)
+
+        p3 =
+            Vec2.sub p2 (Vec2.scale currentDistance direction)
+
+        p4 =
+            Vec2.sub p1 (Vec2.scale currentDistance direction)
+
+        pointToString p =
+            String.fromFloat (Vec2.getX p) ++ " " ++ String.fromFloat (Vec2.getY p)
+    in
+    "M "
+        ++ pointToString p1
+        ++ " L "
+        ++ pointToString p2
+        ++ " L "
+        ++ pointToString p3
+        ++ " L "
+        ++ pointToString p4
+        ++ " Z"
+
 
 drawLine : ModelParams -> Line -> Html Msg
-drawLine { viewport } { start, anim } =
+drawLine { viewport, time } { start, anim } =
     let
         { width, height } =
             viewport.viewport
@@ -303,32 +314,14 @@ drawLine { viewport } { start, anim } =
             max width height
 
         strokeWidth =
-            (longDim / 5.0) |> String.fromFloat
+            longDim / 5.0
 
         end =
             Vec2.sub (Vec2.vec2 width height) start
-
-        direction =
-            Vec2.direction start end
-
-        distance =
-            Vec2.distance start end
-
-        ( x1, y1 ) =
-            Vec2.scale (distance * 0.1) direction
-                |> Vec2.add start
-                |> Vec2.toRecord
-                |> (\a -> ( a.x, a.y ))
-
-        ( x2, y2 ) =
-            Vec2.scale -(distance * 0.1) direction
-                |> Vec2.add end
-                |> Vec2.toRecord
-                |> (\a -> ( a.x, a.y ))
     in
     -- TODO CREATE PATH
     path
-        []
+        [ d (pathD start end strokeWidth (Anim.animate time anim)) ]
         []
 
 
@@ -340,8 +333,8 @@ drawLine { viewport } { start, anim } =
 -}
 
 
-heartX : ModelParams -> Int -> Html Msg
-heartX { viewport, heartAnim, time } number =
+heartX : ModelParams -> String -> String -> Int -> Html Msg
+heartX { viewport, heartAnim, time } color1 color2 number =
     let
         { width, height } =
             viewport.viewport
@@ -384,7 +377,7 @@ heartX { viewport, heartAnim, time } number =
                 |> String.fromFloat
     in
     g [ Attributes.transform ("scale(" ++ scaleFactor ++ ") translate(" ++ x ++ ", " ++ y ++ ") rotate(" ++ rot ++ " 0 0)") ]
-        [ g (heartStyle time heartAnim) [ hearts ] ]
+        [ g (heartStyle time heartAnim) [ hearts color1 color2 ] ]
 
 
 heartDims : Float
@@ -393,23 +386,23 @@ heartDims =
     300
 
 
-hearts : Html Msg
-hearts =
+hearts : String -> String -> Html Msg
+hearts color1 color2 =
     --Heart centered and about 300*300 Px
     g [ Attributes.transform "translate(-50, -50)" ]
-        [ heart "yellowgreen"
+        [ heart color1
             |> Svg.scaleAbout
                 (Point2d.pixels 50 50)
                 3
-        , heart "lightblue"
+        , heart color2
             |> Svg.scaleAbout
                 (Point2d.pixels 50 50)
                 2
-        , heart "yellowgreen"
+        , heart color1
             |> Svg.scaleAbout
                 (Point2d.pixels 50 50)
                 1
-        , heart "lightblue"
+        , heart color2
             |> Svg.scaleAbout
                 (Point2d.pixels 50 50)
                 0.25
