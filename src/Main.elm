@@ -214,7 +214,7 @@ viewPresent model =
         [ Attributes.id "canvas"
         , onClick OnCanvasClick
         ]
-        [ g
+        (g
             []
             (List.range
                 0
@@ -222,15 +222,33 @@ viewPresent model =
                 |> List.map
                     (heartX
                         model
+                        "yellowgreen"
+                        "lightblue"
                     )
             )
-        , g
-            []
-            (List.map
-                (drawLine model)
-                model.lineStyles
-            )
-        ]
+            :: (if List.isEmpty model.lineStyles then
+                    []
+
+                else
+                    [ Svg.clipPath
+                        [ Attributes.id "foreground-clip" ]
+                        (List.map
+                            (drawLine model)
+                            model.lineStyles
+                        )
+                    , g [ Attributes.clipPath "url(#foreground-clip)" ]
+                        [ rect
+                            [ Attributes.fill "red"
+                            , Attributes.width "100%"
+                            , Attributes.height "100%"
+                            , Attributes.x "0"
+                            , Attributes.y "0"
+                            ]
+                            []
+                        ]
+                    ]
+               )
+        )
 
 
 pathWithWidth : Vec2.Vec2 -> Vec2.Vec2 -> Float -> Animation.Property
