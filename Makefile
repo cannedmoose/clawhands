@@ -12,8 +12,6 @@ live:
 
 .PHONY: serve
 serve:
-	make clean
-	make elm.js
 	python3 -m http.server
 
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)

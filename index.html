@@ -4,26 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title></title>
-  <link rel="stylesheet" href="./styles.css">
-  <script type="text/javascript" src="elm.js"></script>
+	<title>❤️❤️❤️❤️❤️</title>
+	<link rel="stylesheet" href="./styles.css">
+	<script type="text/javascript" src="hearts.js"></script>
 </head>
 
 <body>
+	<canvas id="main"></canvas>
 </body>
-
-<script type="text/javascript">
-var app = Elm.Main.init(
-  { flags:
-    { time: Date.now()
-    , model: JSON.parse(localStorage.getItem('habit-store'))
-    }
-  });
-
-app.ports.store.subscribe(function(data) {
-  localStorage.setItem('habit-store', JSON.stringify(data));
-});
-
-</script>
 
 </html>
