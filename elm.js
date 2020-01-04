@@ -11897,8 +11897,30 @@ var $mgold$elm_animation$Animation$animation = function (t) {
 	return $mgold$elm_animation$Animation$A(
 		A7($mgold$elm_animation$Animation$AnimRecord, t, 0, $mgold$elm_animation$Animation$defaultDuration, $elm$core$Maybe$Nothing, $mgold$elm_animation$Animation$defaultEase, 0, 1));
 };
+var $mgold$elm_animation$Animation$from = F2(
+	function (x, _v0) {
+		var a = _v0.a;
+		return $mgold$elm_animation$Animation$A(
+			_Utils_update(
+				a,
+				{from_: x, ramp: $elm$core$Maybe$Nothing}));
+	});
+var $mgold$elm_animation$Animation$to = F2(
+	function (x, _v0) {
+		var a = _v0.a;
+		return $mgold$elm_animation$Animation$A(
+			_Utils_update(
+				a,
+				{ramp: $elm$core$Maybe$Nothing, to_: x}));
+	});
 var $author$project$Main$initalHeart = function (time) {
-	return $mgold$elm_animation$Animation$animation(time);
+	return A2(
+		$mgold$elm_animation$Animation$to,
+		0.5,
+		A2(
+			$mgold$elm_animation$Animation$from,
+			1,
+			$mgold$elm_animation$Animation$animation(time)));
 };
 var $elm$core$Basics$abs = function (n) {
 	return (n < 0) ? (-n) : n;
@@ -12172,6 +12194,7 @@ var $author$project$Main$drawLine = F2(
 		var time = _v0.time;
 		var start = _v1.start;
 		var anim = _v1.anim;
+		var animCompletion = A2($mgold$elm_animation$Animation$animate, time, anim);
 		var _v2 = viewport.viewport;
 		var width = _v2.width;
 		var height = _v2.height;
@@ -12180,24 +12203,19 @@ var $author$project$Main$drawLine = F2(
 			A2($elm_explorations$linear_algebra$Math$Vector2$vec2, width, height),
 			start);
 		var longDim = A2($elm$core$Basics$max, width, height);
-		var strokeWidth = longDim / 5.0;
+		var strokeWidth = animCompletion * (longDim / 5.0);
 		return A2(
 			$elm$svg$Svg$path,
 			_List_fromArray(
 				[
 					$elm$svg$Svg$Attributes$d(
-					A4(
-						$author$project$Main$pathD,
-						start,
-						end,
-						strokeWidth,
-						A2($mgold$elm_animation$Animation$animate, time, anim)))
+					A4($author$project$Main$pathD, start, end, strokeWidth, animCompletion))
 				]),
 			_List_Nil);
 	});
 var $elm$svg$Svg$Attributes$fill = _VirtualDom_attribute('fill');
 var $elm$svg$Svg$g = $elm$svg$Svg$trustedNode('g');
-var $author$project$Main$heartDims = 300;
+var $author$project$Main$heartDims = 200;
 var $elm$svg$Svg$Attributes$transform = _VirtualDom_attribute('transform');
 var $author$project$Main$heartStyle = F2(
 	function (time, anim) {
@@ -12336,6 +12354,8 @@ var $author$project$Main$heartX = F4(
 	});
 var $elm$svg$Svg$Attributes$height = _VirtualDom_attribute('height');
 var $elm$svg$Svg$rect = $elm$svg$Svg$trustedNode('rect');
+var $elm$svg$Svg$text = $elm$virtual_dom$VirtualDom$text;
+var $elm$svg$Svg$text_ = $elm$svg$Svg$trustedNode('text');
 var $elm$svg$Svg$Attributes$width = _VirtualDom_attribute('width');
 var $elm$svg$Svg$Attributes$x = _VirtualDom_attribute('x');
 var $elm$svg$Svg$Attributes$y = _VirtualDom_attribute('y');
@@ -12374,9 +12394,9 @@ var $author$project$Main$viewPresent = function (model) {
 						[
 							$elm$svg$Svg$Attributes$clipPath('url(#foreground-clip)')
 						]),
-					_List_fromArray(
-						[
-							A2(
+					A2(
+						$elm$core$List$cons,
+						A2(
 							$elm$svg$Svg$rect,
 							_List_fromArray(
 								[
@@ -12386,8 +12406,26 @@ var $author$project$Main$viewPresent = function (model) {
 									$elm$svg$Svg$Attributes$x('0'),
 									$elm$svg$Svg$Attributes$y('0')
 								]),
-							_List_Nil)
-						]))
+							_List_Nil),
+						_Utils_ap(
+							A2(
+								$elm$core$List$map,
+								A3($author$project$Main$heartX, model, 'pink', 'red'),
+								A2($elm$core$List$range, 0, 40)),
+							_List_fromArray(
+								[
+									A2(
+									$elm$svg$Svg$text_,
+									_List_fromArray(
+										[
+											$elm$svg$Svg$Attributes$x('200'),
+											$elm$svg$Svg$Attributes$y('200')
+										]),
+									_List_fromArray(
+										[
+											$elm$svg$Svg$text('👁️\uD83E\uDD80U')
+										]))
+								]))))
 				])));
 };
 var $author$project$Main$view = function (model) {

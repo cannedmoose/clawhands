@@ -49,7 +49,9 @@ type alias ModelParams =
 
 
 type alias Line =
-    { anim : Anim.Animation, start : Vec2.Vec2 }
+    { anim : Anim.Animation
+    , start : Vec2.Vec2
+    }
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -110,7 +112,6 @@ update msg model =
                 newHeartAnim =
                     if Anim.isDone newTime heartAnim then
                         Anim.undo time heartAnim
-                        -- Todo Reset animation
 
                     else
                         heartAnim
@@ -163,15 +164,8 @@ view model =
             { title = "<3", body = [ viewPresent params ] }
 
 
-
-{-
-   Todo for sizing we could get the whole screen size and do svg to that then position elements inside.
--}
-
-
 newLineStyle : Float -> Float -> Float -> Float -> Line
 newLineStyle time seed width height =
-    -- TODO figure out points along a line
     let
         ( x, y ) =
             if seed < width then
@@ -195,7 +189,7 @@ newLineStyle time seed width height =
 
 initalHeart : Float -> Anim.Animation
 initalHeart time =
-    Anim.animation time
+    Anim.animation time |> Anim.from 1 |> Anim.to 0.5
 
 
 heartStyle : Float -> Anim.Animation -> List (Html.Attribute Msg)
@@ -237,7 +231,7 @@ viewPresent model =
                             model.lineStyles
                         )
                     , g [ Attributes.clipPath "url(#foreground-clip)" ]
-                        [ rect
+                        (rect
                             [ Attributes.fill "red"
                             , Attributes.width "100%"
                             , Attributes.height "100%"
@@ -245,7 +239,18 @@ viewPresent model =
                             , Attributes.y "0"
                             ]
                             []
-                        ]
+                            :: (List.range
+                                    0
+                                    40
+                                    |> List.map
+                                        (heartX
+                                            model
+                                            "pink"
+                                            "red"
+                                        )
+                               )
+                            ++ [ Svg.text_ [ Attributes.x "200", Attributes.y "200" ] [ Svg.text "👁️\u{1F980}U" ] ]
+                        )
                     ]
                )
         )
@@ -314,14 +319,16 @@ drawLine { viewport, time } { start, anim } =
             max width height
 
         strokeWidth =
-            longDim / 5.0
+            animCompletion * (longDim / 5.0)
 
         end =
             Vec2.sub (Vec2.vec2 width height) start
+
+        animCompletion =
+            Anim.animate time anim
     in
-    -- TODO CREATE PATH
     path
-        [ d (pathD start end strokeWidth (Anim.animate time anim)) ]
+        [ d (pathD start end strokeWidth animCompletion) ]
         []
 
 
@@ -383,7 +390,7 @@ heartX { viewport, heartAnim, time } color1 color2 number =
 heartDims : Float
 heartDims =
     -- NOTE CAN ADJUST TO SCALE HEART
-    300
+    200
 
 
 hearts : String -> String -> Html Msg
