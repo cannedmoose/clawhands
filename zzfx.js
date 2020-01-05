@@ -1,4 +1,9 @@
 // ZzFXmicro - Zuper Zmall Zound Zynth - MIT License - Copyright 2019 Frank Force
+var AudioContext =
+  window.AudioContext || // Default
+  window.webkitAudioContext || // Safari and old versions of Chrome
+  false;
+
 zzfx_v = 0.5;
 zzfx_x = new AudioContext();
 zzfx = (g, h, a, b = 1, c = 0.1, k = 0, f = 0, l = 0, m = 0) => {

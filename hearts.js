@@ -2,21 +2,121 @@ window.onload = function() {
   const main = document.querySelector("#main");
   main.addEventListener("click", canvasClick);
 
-  zzfx(0.4, 0, 100, 2, 0.5, 0.1, 0, 0.2, -3.35); // ZzFX 21117
   window.requestAnimationFrame(render(main));
 };
 
 let lineAnimations = [];
 let time = 0;
+let linesDrawn = false;
+
+function changeTitle(percent) {
+  let steps = 8;
+  if (percent < 1 / steps) {
+    document.title = "😘_____😊";
+  } else if (percent < 2 / steps) {
+    document.title = "😘💕___😊";
+  } else if (percent < 3 / steps) {
+    document.title = "😘_💕__😊";
+  } else if (percent < 4 / steps) {
+    document.title = "😘__💕_😊";
+  } else if (percent < 5 / steps) {
+    document.title = "😘___💕😊";
+  } else if (percent < 6 / steps) {
+    document.title = "😘_____😍";
+  } else if (percent < 7 / steps) {
+    document.title = "😘_____😍";
+  }
+}
+
+function render(canvas) {
+  const ctx = canvas.getContext("2d");
+
+  let titleAnim = {
+    ease: Math.linearTween,
+    duration: 2000,
+    start: 0,
+    content: changeTitle,
+    startVal: 0,
+    changeVal: 1
+  };
+
+  titleAnim.onFinish = function(anim) {
+    titleAnim.start = time;
+  };
+
+  let heartAnim = {
+    ease: Math.easeInOutQuad,
+    duration: 1000,
+    start: 0,
+    content: drawScaledHearts,
+    startVal: 0.5,
+    changeVal: 0.6,
+    onStart: anim =>
+      anim.changeVal > 0
+        ? zzfx(lineAnimations.length * 0.15, 0, 100, 2, 0.5, 0.1, 0, 0.2, -3.35)
+        : undefined
+  };
+
+  heartAnim.onFinish = function(animation) {
+    animation.start = time;
+    animation.startVal = animation.startVal + animation.changeVal;
+    animation.changeVal = -animation.changeVal;
+    animation.started = false;
+  };
+
+  function renderer(delta) {
+    time = delta;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    animate(delta, titleAnim);
+
+    // Draw background
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    //drawBackground(ctx, delta, heartAnim, true, "yellowgreen", "lightblue");
+
+    ctx.save();
+
+    ctx.beginPath();
+    for (let i = 0; i < lineAnimations.length; i++) {
+      animate(delta, lineAnimations[i])(ctx);
+    }
+    ctx.clip();
+    ctx.fillStyle = "red";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawBackground(ctx, delta, heartAnim, false, "pink", "red");
+    ctx.restore();
+
+    window.requestAnimationFrame(renderer);
+  }
+
+  return renderer;
+}
 
 function canvasClick(event) {
   let startPos = Math.random() * (window.innerWidth + window.innerHeight) * 2;
+  let onFinish = undefined;
   if (lineAnimations.length == 0) {
     startPos = window.innerWidth * 0.3;
   } else if (lineAnimations.length == 1) {
     startPos = window.innerWidth * 1.13 + window.innerHeight;
   } else if (lineAnimations.length == 2) {
     startPos = window.innerWidth * 2 + window.innerHeight * 1.4;
+    onFinish = function(_) {
+      lineAnimations = lineAnimations.map(function(anim) {
+        anim.start = time;
+        anim.started = false;
+        anim.onFinish = undefined;
+        anim.ease = Math.easeInOutSine;
+        anim.duration = 1000;
+        anim.onStart = function() {
+          linesDrawn = true;
+        };
+        return { ...anim };
+      });
+    };
+  } else {
+    return;
   }
 
   let x = 0;
@@ -40,16 +140,14 @@ function canvasClick(event) {
     }
   }
 
-  console.log(x, y);
   const lineAnim = {
     ease: Math.easeInOutCirc,
     duration: 700,
     start: time,
     content: lineDrawer(x, y),
-    loops: false,
-    reverse: false,
     startVal: 0,
-    changeVal: 1
+    changeVal: 1,
+    onFinish: onFinish
   };
   zzfx(1, 4.7, 0, 0.75, 0.1, 0.005, 0.02, 181, 1.68); // ZzFX 77605
   lineAnimations.push({ ...lineAnim });
@@ -57,7 +155,7 @@ function canvasClick(event) {
 
 function lineDrawer(x1, y1) {
   let biggestDim = Math.max(window.innerWidth, window.innerHeight);
-  let maxLineWidth = biggestDim * 0.3;
+  let maxLineWidth = biggestDim * 0.05;
   let x2 = window.innerWidth - x1;
   let y2 = window.innerHeight - y1;
 
@@ -65,116 +163,48 @@ function lineDrawer(x1, y1) {
 
   let length = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 
-  function drawLine(ctx, percent) {
-    ctx.translate(x1, y1);
-    ctx.rotate(-angleRadians);
-    ctx.rect(
-      (-maxLineWidth * percent * percent) / 2,
-      -maxLineWidth,
-      maxLineWidth * percent * percent,
-      (length + maxLineWidth * 2) * percent
-    );
-    ctx.rotate(angleRadians);
-    ctx.translate(-x1, -y1);
+  function drawLine(percent) {
+    if (linesDrawn) {
+      newMaxLineWidth = biggestDim;
+      return function(ctx) {
+        ctx.translate(x1, y1);
+        ctx.rotate(-angleRadians);
+        ctx.rect(
+          (-newMaxLineWidth * percent * percent - maxLineWidth) / 2,
+          -maxLineWidth,
+          newMaxLineWidth * percent * percent + maxLineWidth,
+          length + maxLineWidth * 2
+        );
+        ctx.rotate(angleRadians);
+        ctx.translate(-x1, -y1);
+      };
+    } else {
+      return function(ctx) {
+        ctx.translate(x1, y1);
+        ctx.rotate(-angleRadians);
+        ctx.rect(
+          (-maxLineWidth * percent * percent) / 2,
+          -maxLineWidth,
+          maxLineWidth * percent * percent,
+          (length + maxLineWidth * 2) * percent
+        );
+        ctx.rotate(angleRadians);
+        ctx.translate(-x1, -y1);
+      };
+    }
   }
   return drawLine;
 }
 
-// Want to specify function onStart and onFinish functions for animation
-// can get rid of loops, reverse if we do
-// Also content should just be onAnimate
-// Also also should only draw hearts once, then color shift for the second one.
-
-function animate(ctx, time, animation) {
-  let {
-    ease,
-    duration,
-    start,
-    content,
-    loops,
-    reverse,
-    startVal,
-    changeVal
-  } = { ...animation };
-
-  // Elapsed time since start Clamped to [0, duration]
-  let clampedElapsed = Math.min(Math.max(time - start, 0), duration);
-
-  if (clampedElapsed >= duration && loops) {
-    animation.start = time;
-    animation.reverse = !reverse;
-    if (reverse) {
-      zzfx(0.4, 0, 100, 2, 0.5, 0.1, 0, 0.2, -3.35); // ZzFX 21117
-    }
-  }
-
-  if (reverse) {
-    clampedElapsed = duration - clampedElapsed;
-  }
-
-  const genValue = ease(clampedElapsed, startVal, changeVal, duration);
-  content(ctx, genValue);
-}
-
-function render(canvas) {
-  const ctx = canvas.getContext("2d");
-
-  let heartAnim = {
-    ease: Math.easeInOutQuad,
-    duration: 1000,
-    start: 0,
-    content: drawScaledHearts("yellowgreen", "lightblue"),
-    loops: true,
-    reverse: false,
-    startVal: 0.5,
-    changeVal: 0.6
-  };
-
-  let heartAnim2 = {
-    ease: Math.easeInOutQuad,
-    duration: 1000,
-    start: 0,
-    content: drawScaledHearts("pink", "red"),
-    loops: true,
-    reverse: false,
-    startVal: 0.5,
-    changeVal: 0.6
-  };
-
-  function renderer(delta) {
-    time = delta;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    // Draw background
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBackground(ctx, delta, heartAnim);
-
-    ctx.save();
-
-    ctx.beginPath();
-    for (let i = 0; i < lineAnimations.length; i++) {
-      animate(ctx, delta, lineAnimations[i]);
-    }
-    ctx.clip();
-    ctx.fillStyle = "red";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    drawBackground(ctx, delta, heartAnim2);
-    ctx.restore();
-
-    window.requestAnimationFrame(renderer);
-  }
-
-  return renderer;
-}
-
-function drawBackground(ctx, delta, anim) {
+function drawBackground(ctx, delta, anim, isCircle, fill1, fill2) {
   let largestDim = Math.max(window.innerHeight, window.innerWidth);
 
   const heartsAcross = 4;
 
   let heartSize = largestDim / heartsAcross; // Scaled size of a heart
   const scaleFactor = heartSize / 100;
+
+  let scaledHeart = animate(delta, anim);
 
   for (let ycol = 0; ycol < window.innerHeight / heartSize + 1; ycol++) {
     for (let xcol = 0; xcol < window.innerWidth / heartSize + 1; xcol++) {
@@ -184,18 +214,20 @@ function drawBackground(ctx, delta, anim) {
         ctx.rotate(Math.PI);
       }
       ctx.scale(scaleFactor, scaleFactor);
-      animate(ctx, delta, anim);
+      scaledHeart(ctx, isCircle, fill1, fill2);
+
       ctx.restore();
     }
   }
 }
 
-function drawScaledHearts(fill1, fill2) {
-  return function(ctx, scale) {
+function drawScaledHearts(scale) {
+  return function(ctx, isCircle, fill1, fill2) {
     ctx.save();
     ctx.scale(scale, scale);
     heartStack(
       ctx,
+      isCircle,
       4,
       (t, b, c, d) =>
         Math.linearTween(t * Math.sqrt(Math.sqrt(scale)), b, c, d),
@@ -206,7 +238,7 @@ function drawScaledHearts(fill1, fill2) {
   };
 }
 
-function heartStack(ctx, n, ease, fill1, fill2) {
+function heartStack(ctx, isCircle, n, ease, fill1, fill2) {
   ctx.save();
   for (let i = 0; i < n; i++) {
     ctx.save();
@@ -220,7 +252,13 @@ function heartStack(ctx, n, ease, fill1, fill2) {
 
     ctx.scale(scale, scale);
 
-    heart(ctx);
+    if (isCircle) {
+      ctx.beginPath();
+      ctx.arc(0, 0, 75 / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      heart(ctx);
+    }
     ctx.restore();
   }
   ctx.restore();
@@ -239,6 +277,41 @@ function heart(ctx) {
   ctx.bezierCurveTo(85, 25, 75, 37, 75, 40);
   ctx.fill();
   ctx.restore();
+}
+
+// Want to specify function onStart and onFinish functions for animation
+// can get rid of loops, reverse if we do
+// Also content should just be onAnimate
+// Also also should only draw hearts once, then color shift for the second one.
+
+function animate(time, animation) {
+  let {
+    ease,
+    duration,
+    start,
+    content,
+    startVal,
+    changeVal,
+    onStart,
+    onFinish,
+    started
+  } = {
+    ...animation
+  };
+
+  // Elapsed time since start Clamped to [0, duration]
+  let clampedElapsed = Math.min(Math.max(time - start, 0), duration);
+  if (time > start && onStart && !started) {
+    onStart(animation);
+    animation.started = true;
+  }
+
+  if (clampedElapsed >= duration && onFinish) {
+    onFinish(animation);
+  }
+
+  const genValue = ease(clampedElapsed, startVal, changeVal, duration);
+  return content(genValue);
 }
 
 /**EASING**/
