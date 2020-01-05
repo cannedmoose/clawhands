@@ -1,11 +1,33 @@
-Future avenues:
+Stages:
 
-Message to El in center
-Maybe each click reveals a new part of the message
-Maybe it's long form
+Opening on blue background white/black text
+Hey El, on this special day I wanted to say...[flashing cursor] (click to continue)
 
-Sound effects
+<click>
 
-More layers (eg each time you do it a new color of hearts is revealed)
+Eye appears
+Ahhhhh an eye, killll it!!!!
 
-Making animation more swish
+<click on eye>
+
+Ahem as I was saying... [flashing cursor]
+
+<click>
+
+Ahhh a crab, killllll ittttt!!!!!
+
+<click on crab>
+
+Where was I...[flashing cursor]
+
+<click>
+
+Ahhhhhh a U??!?! Umm kill ITTTT!!!
+
+<Click on U>
+
+Oh yeah I was going to say [flashing cursor]
+
+<click>
+
+background disappears, crab, eye and U arrange themselves into [I clawhands you]
