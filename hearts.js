@@ -2,6 +2,7 @@ window.onload = function() {
   const main = document.querySelector("#main");
   main.addEventListener("click", canvasClick);
 
+  zzfx(0.4, 0, 100, 2, 0.5, 0.1, 0, 0.2, -3.35); // ZzFX 21117
   window.requestAnimationFrame(render(main));
 };
 
@@ -10,6 +11,14 @@ let time = 0;
 
 function canvasClick(event) {
   let startPos = Math.random() * (window.innerWidth + window.innerHeight) * 2;
+  if (lineAnimations.length == 0) {
+    startPos = window.innerWidth * 0.3;
+  } else if (lineAnimations.length == 1) {
+    startPos = window.innerWidth * 1.13 + window.innerHeight;
+  } else if (lineAnimations.length == 2) {
+    startPos = window.innerWidth * 2 + window.innerHeight * 1.4;
+  }
+
   let x = 0;
   let y = 0;
 
@@ -34,7 +43,7 @@ function canvasClick(event) {
   console.log(x, y);
   const lineAnim = {
     ease: Math.easeInOutCirc,
-    duration: 750,
+    duration: 700,
     start: time,
     content: lineDrawer(x, y),
     loops: false,
@@ -42,17 +51,17 @@ function canvasClick(event) {
     startVal: 0,
     changeVal: 1
   };
+  zzfx(1, 4.7, 0, 0.75, 0.1, 0.005, 0.02, 181, 1.68); // ZzFX 77605
   lineAnimations.push({ ...lineAnim });
 }
 
 function lineDrawer(x1, y1) {
   let biggestDim = Math.max(window.innerWidth, window.innerHeight);
-  let maxLineWidth = biggestDim * 0.2;
+  let maxLineWidth = biggestDim * 0.3;
   let x2 = window.innerWidth - x1;
   let y2 = window.innerHeight - y1;
 
   let angleRadians = Math.PI / 2 - Math.atan2(y2 - y1, x2 - x1);
-  console.log((180 * angleRadians) / Math.PI);
 
   let length = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 
@@ -60,9 +69,9 @@ function lineDrawer(x1, y1) {
     ctx.translate(x1, y1);
     ctx.rotate(-angleRadians);
     ctx.rect(
-      (-maxLineWidth * percent) / 2,
+      (-maxLineWidth * percent * percent) / 2,
       -maxLineWidth,
-      maxLineWidth * percent,
+      maxLineWidth * percent * percent,
       (length + maxLineWidth * 2) * percent
     );
     ctx.rotate(angleRadians);
@@ -70,6 +79,11 @@ function lineDrawer(x1, y1) {
   }
   return drawLine;
 }
+
+// Want to specify function onStart and onFinish functions for animation
+// can get rid of loops, reverse if we do
+// Also content should just be onAnimate
+// Also also should only draw hearts once, then color shift for the second one.
 
 function animate(ctx, time, animation) {
   let {
@@ -89,6 +103,9 @@ function animate(ctx, time, animation) {
   if (clampedElapsed >= duration && loops) {
     animation.start = time;
     animation.reverse = !reverse;
+    if (reverse) {
+      zzfx(0.4, 0, 100, 2, 0.5, 0.1, 0, 0.2, -3.35); // ZzFX 21117
+    }
   }
 
   if (reverse) {
@@ -154,7 +171,7 @@ function render(canvas) {
 function drawBackground(ctx, delta, anim) {
   let largestDim = Math.max(window.innerHeight, window.innerWidth);
 
-  const heartsAcross = 5;
+  const heartsAcross = 4;
 
   let heartSize = largestDim / heartsAcross; // Scaled size of a heart
   const scaleFactor = heartSize / 100;
