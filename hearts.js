@@ -245,14 +245,14 @@ function canvasClick(ctx, gameState) {
       gameState.props.crab = {
         xAnim: {
           ease: Math.easeInOutQuad,
-          duration: 2000,
+          duration: 1500,
           start: gameState.time,
           startVal: xpos,
           changeVal: xGoal - xpos
         },
         yAnim: {
           ease: Math.easeInOutQuad,
-          duration: 2000,
+          duration: 1500,
           start: gameState.time,
           startVal: ypos,
           changeVal: yGoal - ypos
@@ -452,9 +452,10 @@ function canvasClick(ctx, gameState) {
     } else if (gameState.stage == "UKILL") {
       gameState.stage = "FINISH";
       gameState.lines = gameState.lines.map(function(line) {
-        line.animation.start = gameState.time;
+        line.animation.start = gameState.time + 100;
         line.animation.ease = Math.easeInOutSine;
-        return line;
+        line.animation.duration = 2000;
+        return { ...line };
       });
 
       let rotAnim = {
@@ -645,9 +646,9 @@ function pathRay(ctx, delta, line) {
   ctx.rotate(-angleRadians);
   ctx.rect(
     (-maxLineWidth * percent * percent) / 2,
-    -maxLineWidth,
+    -maxLineWidth * 2,
     maxLineWidth * percent * percent,
-    (length + maxLineWidth * 2) * percent
+    (length + maxLineWidth * 4) * percent
   );
   ctx.rotate(angleRadians);
   ctx.translate(-x1, -y1);
@@ -658,8 +659,9 @@ function pathRay(ctx, delta, line) {
  */
 function pathExpanding(ctx, delta, line) {
   let { x1, y1, x2, y2, animation } = line;
-  let biggestDim = Math.max(window.innerWidth, window.innerHeight) * 2;
+  let biggestDim = Math.max(window.innerWidth, window.innerHeight);
   let rayWidth = biggestDim * 0.05;
+  biggestDim = biggestDim * 2;
   //let x2 = window.innerWidth - x;
   //let y2 = window.innerHeight - y;
 
@@ -673,9 +675,9 @@ function pathExpanding(ctx, delta, line) {
   ctx.rotate(-angleRadians);
   ctx.rect(
     (-biggestDim * percent * percent - rayWidth) / 2,
-    -rayWidth,
+    -rayWidth * 2,
     biggestDim * percent * percent + rayWidth,
-    length + rayWidth * 2
+    length + rayWidth * 4
   );
   ctx.rotate(angleRadians);
   ctx.translate(-x1, -y1);
@@ -773,7 +775,7 @@ function animate(time, animation) {
 function changeTitle(percent) {
   let steps = 8;
   if (percent < 1 / steps) {
-    document.title = "😘_____😊";
+    document.title = "😘___＿😊";
   } else if (percent < 2 / steps) {
     document.title = "😘💕___😊";
   } else if (percent < 3 / steps) {
@@ -783,8 +785,8 @@ function changeTitle(percent) {
   } else if (percent < 5 / steps) {
     document.title = "😘___💕😊";
   } else if (percent < 6 / steps) {
-    document.title = "😘_____😍";
+    document.title = "😘___＿😍";
   } else if (percent < 7 / steps) {
-    document.title = "😘_____😍";
+    document.title = "😘___＿😍";
   }
 }
