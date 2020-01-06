@@ -1,12 +1,24 @@
 // How to reschedule an animation
 // Or reverse it..
 
+const stateText = {
+  OPEN: "Eloise on this special day I wanted to say...", // Normal
+  CRAB: "Ahhh a crab, kill itt!!!!!", // Fast
+  CRABKILL: "Good job! Uhhh where was I...", // Normal
+  EYE: "Ewwww an eye, killl it!!!!", // Fast
+  EYEKILL: "Ummmm so as I was saying...", // Normal
+  U: "... a U??!?! KILL ITTT!!!", // Fast
+  UKILL: "Sooo I was going to say...", // Normal
+  FINISH: ""
+};
+
 window.onload = function() {
   const main = document.querySelector("#main");
+  const textArea = document.querySelector("#text");
   let gameState = {
     stage: "OPEN",
     lines: [],
-    props: [],
+    props: {},
     backgroundAnim: {
       ease: Math.easeInOutQuad,
       duration: 1000,
@@ -21,17 +33,22 @@ window.onload = function() {
       startVal: 0,
       changeVal: 1
     },
-    textAnim: {},
+    textAnim: {
+      ease: Math.easeOutQuad,
+      duration: 2000,
+      start: 0,
+      startVal: 0,
+      changeVal: 1
+    },
     time: 0
   };
 
-  window.requestAnimationFrame(render(main, gameState));
+  window.requestAnimationFrame(render(main, textArea, gameState));
 };
 
-function render(canvas, gameState) {
+function render(canvas, textArea, gameState) {
   const ctx = canvas.getContext("2d");
-  let canvasClicker = canvasClick(gameState);
-  main.addEventListener("click", canvasClicker);
+  canvasClick(ctx, gameState);
 
   function renderer(delta) {
     canvas.width = window.innerWidth;
@@ -52,7 +69,7 @@ function render(canvas, gameState) {
 
     ctx.beginPath();
     for (let i = 0; i < gameState.lines.length; i++) {
-      if (gameState.stage != "FINAL") {
+      if (gameState.stage != "FINISH") {
         pathRay(ctx, delta, gameState.lines[i]);
       } else {
         pathExpanding(ctx, delta, gameState.lines[i]);
@@ -77,79 +94,554 @@ function render(canvas, gameState) {
     }
     ctx.restore();
 
+    // Draw props
+    if (gameState.props.crab) {
+      crabRender(ctx, gameState);
+    }
+
+    if (gameState.props.eye) {
+      eyeRender(ctx, gameState);
+    }
+
+    if (gameState.props.u) {
+      uRender(ctx, gameState);
+    }
+
+    // Draw text
+
+    let text = stateText[gameState.stage];
+    let textPercent = animate(delta, gameState.textAnim);
+    textArea.innerText = text;
+    textArea.style = "opacity: " + textPercent;
+
     window.requestAnimationFrame(renderer);
   }
 
   return renderer;
 }
 
-function canvasClick(gameState) {
-  return function(event) {
-    let startPos = Math.random() * (window.innerWidth + window.innerHeight) * 2;
-    if (gameState.lines.length == 0) {
-      startPos = window.innerWidth * 0.3;
-    } else if (gameState.lines.length == 1) {
-      startPos = window.innerWidth * 1.13 + window.innerHeight;
-    } else if (gameState.lines.length == 2) {
-      startPos = window.innerWidth * 2 + window.innerHeight * 1.4;
-    } else {
-      return;
-    }
+function crabRender(ctx, gameState) {
+  let rot = animate(gameState.time, gameState.props.crab.rotAnim);
+  let scale = animate(gameState.time, gameState.props.crab.scaleAnim);
+  let x = animate(gameState.time, gameState.props.crab.xAnim);
+  let y = animate(gameState.time, gameState.props.crab.yAnim);
+  drawProp(ctx, rot, scale, x, y, crabIMG);
 
-    let x = 0;
-    let y = 0;
+  if (
+    isFinished(gameState.time, gameState.props.crab.xAnim) &&
+    gameState.props.crab.stage == "ALIVE"
+  ) {
+    let xGoal = Math.random() * window.innerWidth;
+    let yGoal = Math.min(
+      Math.max(
+        y - Math.random() * window.innerHeight * 0.2 + window.innerHeight * 0.1,
+        window.innerHeight * 0.2
+      ),
+      window.innerHeight * 0.8
+    );
 
-    if (startPos < window.innerWidth) {
-      x = startPos;
-    } else {
-      startPos -= window.innerWidth;
-      if (startPos < window.innerHeight) {
-        y = startPos;
-        x = window.innerWidth;
-      } else {
-        startPos -= window.innerHeight;
-        if (startPos < window.innerWidth) {
-          x = startPos;
-          y = window.innerHeight;
-        } else {
-          y = startPos - window.innerWidth;
-        }
+    gameState.props.crab.xAnim.start = gameState.time;
+    gameState.props.crab.xAnim.startVal = x;
+    gameState.props.crab.xAnim.changeVal = xGoal - x;
+
+    gameState.props.crab.yAnim.start = gameState.time;
+    gameState.props.crab.yAnim.startVal = y;
+    gameState.props.crab.yAnim.changeVal = yGoal - y;
+  }
+}
+
+function eyeRender(ctx, gameState) {
+  let rot = animate(gameState.time, gameState.props.eye.rotAnim);
+  let scale = animate(gameState.time, gameState.props.eye.scaleAnim);
+  let x = animate(gameState.time, gameState.props.eye.xAnim);
+  let y = animate(gameState.time, gameState.props.eye.yAnim);
+  drawProp(ctx, rot, scale, x, y, eyeIMG);
+
+  if (
+    isFinished(gameState.time, gameState.props.eye.xAnim) &&
+    gameState.props.eye.stage == "ALIVE"
+  ) {
+    let xGoal = Math.random() * window.innerWidth;
+    let yGoal = Math.min(
+      Math.max(
+        y - Math.random() * window.innerHeight * 0.2 + window.innerHeight * 0.1,
+        window.innerHeight * 0.2
+      ),
+      window.innerHeight * 0.8
+    );
+
+    gameState.props.eye.xAnim.start = gameState.time;
+    gameState.props.eye.xAnim.startVal = x;
+    gameState.props.eye.xAnim.changeVal = xGoal - x;
+
+    gameState.props.eye.yAnim.start = gameState.time;
+    gameState.props.eye.yAnim.startVal = y;
+    gameState.props.eye.yAnim.changeVal = yGoal - y;
+  }
+}
+
+function uRender(ctx, gameState) {
+  let rot = animate(gameState.time, gameState.props.u.rotAnim);
+  let scale = animate(gameState.time, gameState.props.u.scaleAnim);
+  let x = animate(gameState.time, gameState.props.u.xAnim);
+  let y = animate(gameState.time, gameState.props.u.yAnim);
+  drawProp(ctx, rot, scale, x, y, uIMG);
+
+  if (
+    isFinished(gameState.time, gameState.props.u.xAnim) &&
+    gameState.props.u.stage == "ALIVE"
+  ) {
+    let xGoal = Math.random() * window.innerWidth;
+    let yGoal = Math.min(
+      Math.max(
+        y - Math.random() * window.innerHeight * 0.2 + window.innerHeight * 0.1,
+        window.innerHeight * 0.2
+      ),
+      window.innerHeight * 0.8
+    );
+
+    gameState.props.u.xAnim.start = gameState.time;
+    gameState.props.u.xAnim.startVal = x;
+    gameState.props.u.xAnim.changeVal = xGoal - x;
+
+    gameState.props.u.yAnim.start = gameState.time;
+    gameState.props.u.yAnim.startVal = y;
+    gameState.props.u.yAnim.changeVal = yGoal - y;
+  }
+}
+
+function drawProp(ctx, rot, scale, x, y, prop) {
+  let biggestDim = window.innerWidth;
+  let scaleFactor = 0.1 * (biggestDim / 550);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.scale(scaleFactor, scaleFactor);
+  ctx.scale(scale, scale);
+  ctx.translate(-550 / 2, -550 / 2);
+  ctx.drawImage(prop, 0, 0);
+  ctx.restore();
+}
+
+function canvasClick(ctx, gameState) {
+  let biggestDim = window.innerWidth;
+  let scaleFactor = 0.1 * (biggestDim / 550);
+
+  let clicker = function(event) {
+    let textAnimationFinished = isFinished(gameState.time, gameState.textAnim);
+    if (gameState.stage == "OPEN") {
+      gameState.stage = "CRAB";
+      gameState.textAnim.start = gameState.time;
+      let xpos =
+        Math.random() * window.innerWidth * 0.7 + window.innerWidth * 0.1;
+      let xGoal =
+        Math.random() * window.innerWidth * 0.7 + window.innerWidth * 0.1;
+      let ypos =
+        Math.random() * window.innerHeight * 0.2 + window.innerHeight * 0.7;
+      let yGoal =
+        ypos -
+        Math.random() * window.innerHeight * 0.2 -
+        window.innerHeight * 0.1;
+      gameState.props.crab = {
+        xAnim: {
+          ease: Math.easeInOutQuad,
+          duration: 2000,
+          start: gameState.time,
+          startVal: xpos,
+          changeVal: xGoal - xpos
+        },
+        yAnim: {
+          ease: Math.easeInOutQuad,
+          duration: 2000,
+          start: gameState.time,
+          startVal: ypos,
+          changeVal: yGoal - ypos
+        },
+        rotAnim: {
+          ease: Math.easeInOutQuad,
+          duration: 0,
+          start: gameState.time,
+          startVal: 0,
+          changeVal: 0
+        },
+        scaleAnim: {
+          ease: Math.easeInOutQuad,
+          duration: 0,
+          start: gameState.time,
+          startVal: 0,
+          changeVal: 0
+        },
+        stage: "ALIVE"
+      };
+    } else if (gameState.stage == "CRAB") {
+      let crabRad = (550 * scaleFactor) / 2;
+      let crabX = animate(gameState.time, gameState.props.crab.xAnim);
+      let crabY = animate(gameState.time, gameState.props.crab.yAnim);
+      gameState.click = event;
+      if (
+        (event.clientX - crabX) * (event.clientX - crabX) +
+          (event.clientY - crabY) * (event.clientY - crabY) <=
+        crabRad * crabRad
+      ) {
+        gameState.props.crab.xAnim.start = gameState.time;
+        gameState.props.crab.xAnim.startVal = crabX;
+        gameState.props.crab.xAnim.changeVal = 0;
+
+        gameState.props.crab.yAnim.start = gameState.time;
+        gameState.props.crab.yAnim.startVal = crabY;
+        gameState.props.crab.yAnim.changeVal = 0;
+
+        gameState.props.crab.stage = "KILLED";
+        gameState.stage = "CRABKILL";
+        gameState.props.crab.rotAnim = {
+          ease: Math.easeInOutQuad,
+          duration: 1000,
+          start: gameState.time,
+          startVal: 0,
+          changeVal: Math.PI
+        };
+        gameState.textAnim.start = gameState.time + 1000;
+        addLine(gameState, crabX, crabY);
       }
-    }
+    } else if (gameState.stage == "CRABKILL") {
+      gameState.stage = "EYE";
+      gameState.textAnim.start = gameState.time;
+      let xpos =
+        Math.random() * window.innerWidth * 0.7 + window.innerWidth * 0.1;
+      let xGoal =
+        Math.random() * window.innerWidth * 0.7 + window.innerWidth * 0.1;
+      let ypos =
+        Math.random() * window.innerHeight * 0.2 + window.innerHeight * 0.7;
+      let yGoal =
+        Math.random() * window.innerHeight * 0.2 + window.innerHeight * 0.7;
+      gameState.props.eye = {
+        xAnim: {
+          ease: Math.easeInOutQuad,
+          duration: 1000,
+          start: gameState.time,
+          startVal: xpos,
+          changeVal: xGoal - xpos
+        },
+        yAnim: {
+          ease: Math.easeInOutQuad,
+          duration: 1000,
+          start: gameState.time,
+          startVal: ypos,
+          changeVal: yGoal - ypos
+        },
+        rotAnim: {
+          ease: Math.easeInOutQuad,
+          duration: 0,
+          start: gameState.time,
+          startVal: 0,
+          changeVal: 0
+        },
+        scaleAnim: {
+          ease: Math.easeInOutQuad,
+          duration: 0,
+          start: gameState.time,
+          startVal: 0,
+          changeVal: 0
+        },
+        stage: "ALIVE"
+      };
+    } else if (gameState.stage == "EYE") {
+      let crabRad = (550 * scaleFactor) / 2;
+      let crabX = animate(gameState.time, gameState.props.eye.xAnim);
+      let crabY = animate(gameState.time, gameState.props.eye.yAnim);
+      gameState.click = event;
+      if (
+        (event.clientX - crabX) * (event.clientX - crabX) +
+          (event.clientY - crabY) * (event.clientY - crabY) <=
+        crabRad * crabRad
+      ) {
+        gameState.props.eye.xAnim.start = gameState.time;
+        gameState.props.eye.xAnim.startVal = crabX;
+        gameState.props.eye.xAnim.changeVal = 0;
 
-    gameState.lines.push({
-      animation: {
-        ease: Math.linearTween,
-        duration: 2000,
+        gameState.props.eye.yAnim.start = gameState.time;
+        gameState.props.eye.yAnim.startVal = crabY;
+        gameState.props.eye.yAnim.changeVal = 0;
+
+        gameState.props.eye.stage = "KILLED";
+        gameState.stage = "EYEKILL";
+        gameState.props.eye.rotAnim = {
+          ease: Math.easeInOutQuad,
+          duration: 1000,
+          start: gameState.time,
+          startVal: 0,
+          changeVal: Math.PI
+        };
+        gameState.textAnim.start = gameState.time + 1000;
+        addLine(gameState, crabX, crabY);
+      }
+    } else if (gameState.stage == "EYEKILL") {
+      gameState.stage = "U";
+      gameState.textAnim.start = gameState.time;
+      let xpos =
+        Math.random() * window.innerWidth * 0.7 + window.innerWidth * 0.1;
+      let xGoal =
+        Math.random() * window.innerWidth * 0.7 + window.innerWidth * 0.1;
+      let ypos =
+        Math.random() * window.innerHeight * 0.2 + window.innerHeight * 0.7;
+      let yGoal =
+        ypos -
+        Math.random() * window.innerHeight * 0.2 -
+        window.innerHeight * 0.1;
+      gameState.props.u = {
+        xAnim: {
+          ease: Math.easeInOutQuad,
+          duration: 750,
+          start: gameState.time,
+          startVal: xpos,
+          changeVal: xGoal - xpos
+        },
+        yAnim: {
+          ease: Math.easeInOutQuad,
+          duration: 750,
+          start: gameState.time,
+          startVal: ypos,
+          changeVal: yGoal - ypos
+        },
+        rotAnim: {
+          ease: Math.easeInOutQuad,
+          duration: 0,
+          start: gameState.time,
+          startVal: 0,
+          changeVal: 0
+        },
+        scaleAnim: {
+          ease: Math.easeInOutQuad,
+          duration: 0,
+          start: gameState.time,
+          startVal: 0,
+          changeVal: 0
+        },
+        stage: "ALIVE"
+      };
+    } else if (gameState.stage == "U") {
+      let crabRad = (550 * scaleFactor) / 2;
+      let crabX = animate(gameState.time, gameState.props.u.xAnim);
+      let crabY = animate(gameState.time, gameState.props.u.yAnim);
+      gameState.click = event;
+      if (
+        (event.clientX - crabX) * (event.clientX - crabX) +
+          (event.clientY - crabY) * (event.clientY - crabY) <=
+        crabRad * crabRad
+      ) {
+        gameState.props.u.xAnim.start = gameState.time;
+        gameState.props.u.xAnim.startVal = crabX;
+        gameState.props.u.xAnim.changeVal = 0;
+
+        gameState.props.u.yAnim.start = gameState.time;
+        gameState.props.u.yAnim.startVal = crabY;
+        gameState.props.u.yAnim.changeVal = 0;
+
+        gameState.props.u.stage = "KILLED";
+        gameState.stage = "UKILL";
+        gameState.props.u.rotAnim = {
+          ease: Math.easeInOutQuad,
+          duration: 1000,
+          start: gameState.time,
+          startVal: 0,
+          changeVal: Math.PI
+        };
+        gameState.textAnim.start = gameState.time + 1000;
+        addLine(gameState, crabX, crabY);
+      }
+    } else if (gameState.stage == "UKILL") {
+      gameState.stage = "FINISH";
+      gameState.lines = gameState.lines.map(function(line) {
+        line.animation.start = gameState.time;
+        line.animation.ease = Math.easeInOutSine;
+        return line;
+      });
+
+      let rotAnim = {
+        ease: Math.easeInOutQuad,
+        duration: 1000,
         start: gameState.time,
-        startVal: 0,
-        changeVal: 1
-      },
-      x,
-      y
-    });
-    zzfx(1, 4.7, 0, 0.75, 0.1, 0.005, 0.02, 181, 1.68); // ZzFX 77605
+        startVal: Math.PI,
+        changeVal: -Math.PI
+      };
+
+      let scaleAnim = {
+        ease: Math.easeInOutQuad,
+        duration: 1000,
+        start: gameState.time,
+        startVal: 1,
+        changeVal: 2
+      };
+
+      let y = window.innerHeight / 2;
+
+      let eyeX = window.innerWidth / 6;
+      let crabX = window.innerWidth / 2;
+      let uX = (5 * window.innerWidth) / 6;
+
+      gameState.props.eye.rotAnim = rotAnim;
+      gameState.props.eye.scaleAnim = scaleAnim;
+      gameState.props.eye.xAnim.changeVal =
+        eyeX - gameState.props.eye.xAnim.startVal;
+      gameState.props.eye.xAnim.start = gameState.time;
+      gameState.props.eye.yAnim.changeVal =
+        y - gameState.props.eye.yAnim.startVal;
+      gameState.props.eye.yAnim.start = gameState.time;
+
+      gameState.props.crab.rotAnim = rotAnim;
+      gameState.props.crab.scaleAnim = scaleAnim;
+      gameState.props.crab.xAnim.changeVal =
+        crabX - gameState.props.crab.xAnim.startVal;
+      gameState.props.crab.xAnim.start = gameState.time;
+      gameState.props.crab.yAnim.changeVal =
+        y - gameState.props.crab.yAnim.startVal;
+      gameState.props.crab.yAnim.start = gameState.time;
+
+      gameState.props.u.rotAnim = rotAnim;
+      gameState.props.u.scaleAnim = scaleAnim;
+      gameState.props.u.xAnim.changeVal = uX - gameState.props.u.xAnim.startVal;
+      gameState.props.u.xAnim.start = gameState.time;
+      gameState.props.u.yAnim.changeVal = y - gameState.props.u.yAnim.startVal;
+      gameState.props.u.yAnim.start = gameState.time;
+    }
   };
+
+  if (gameState.clicker) {
+    window.removeEventListener(gameState.clicker);
+  }
+  gameState.clicker = clicker;
+  window.addEventListener("click", clicker);
 }
 
 // LINES
 /**
  * Draw a ray through the center that expands in both length and width
  */
+
+function slope(x1, y1, x2, y2) {
+  return (y1 - y2) / (x1 - x2);
+}
+
+// x = 0
+function lcase1(x1, y1, x2, y2) {
+  let m = slope(x1, y1, x2, y2);
+  return y1 - m * x1;
+}
+
+// x= width
+function lcase2(x1, y1, x2, y2) {
+  let m = slope(x1, y1, x2, y2);
+  return y1 + m * window.innerWidth - m * x1;
+}
+
+// y= 0
+function lcase3(x1, y1, x2, y2) {
+  let m = slope(x1, y1, x2, y2);
+  return -y1 / m + x1;
+}
+
+// y = height
+function lcase4(x1, y1, x2, y2) {
+  let m = slope(x1, y1, x2, y2);
+  return (window.innerHeight - y1) / m + x1;
+}
+
+function addLine(gameState, x, y) {
+  let startPos = Math.random() * (window.innerWidth + window.innerHeight) * 2;
+
+  let x1 = 0;
+  let y1 = 0;
+  let x2 = 0;
+  let y2 = 0;
+
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+
+  if (startPos < window.innerWidth) {
+    // y = 0
+    x1 = startPos;
+
+    if (lcase1(x1, y1, x, y) < height && lcase1(x1, y1, x, y) > 0) {
+      y2 = lcase1(x1, y1, x, y);
+    } else if (lcase2(x1, y1, x, y) < height && lcase2(x1, y1, x, y) > 0) {
+      y2 = lcase2(x1, y1, x, y);
+      x2 = width;
+    } else if (lcase4(x1, y1, x, y) < width && lcase3(x1, y1, x, y) > 0) {
+      x2 = lcase4(x1, y1, x, y);
+      y2 = height;
+    }
+  } else {
+    startPos -= window.innerWidth;
+    if (startPos < window.innerHeight) {
+      y1 = startPos;
+      x1 = window.innerWidth;
+
+      if (lcase1(x1, y1, x, y) < height && lcase1(x1, y1, x, y) > 0) {
+        y2 = lcase1(x1, y1, x, y);
+      } else if (lcase3(x1, y1, x, y) < width && lcase3(x1, y1, x, y) > 0) {
+        x2 = lcase3(x1, y1, x, y);
+      } else if (lcase4(x1, y1, x, y) < width && lcase4(x1, y1, x, y) > 0) {
+        x2 = lcase4(x1, y1, x, y);
+        y2 = height;
+      }
+    } else {
+      startPos -= window.innerHeight;
+      if (startPos < window.innerWidth) {
+        x1 = startPos;
+        y1 = window.innerHeight;
+        if (lcase1(x1, y1, x, y) < height && lcase1(x1, y1, x, y) > 0) {
+          y2 = lcase1(x1, y1, x, y);
+        } else if (lcase2(x1, y1, x, y) < height && lcase2(x1, y1, x, y) > 0) {
+          y2 = lcase2(x1, y1, x, y);
+          x2 = width;
+        } else if (lcase3(x1, y1, x, y) < width && lcase3(x1, y1, x, y) > 0) {
+          x2 = lcase3(x1, y1, x, y);
+        }
+      } else {
+        y1 = startPos - window.innerWidth;
+        if (lcase3(x1, y1, x, y) < width && lcase3(x1, y1, x, y) > 0) {
+          x2 = lcase3(x1, y1, x, y);
+        } else if (lcase2(x1, y1, x, y) < height && lcase2(x1, y1, x, y) > 0) {
+          y2 = lcase2(x1, y1, x, y);
+          x2 = width;
+        } else if (lcase4(x1, y1, x, y) < width && lcase4(x1, y1, x, y) > 0) {
+          x2 = lcase4(x1, y1, x, y);
+          y2 = height;
+        }
+      }
+    }
+  }
+
+  gameState.lines.push({
+    animation: {
+      ease: Math.easeInOutQuad,
+      duration: 1000,
+      start: gameState.time,
+      startVal: 0,
+      changeVal: 1
+    },
+    x1,
+    y1,
+    x2,
+    y2
+  });
+  zzfx(1, 4.7, 0, 0.75, 0.1, 0.005, 0.02, 181, 1.68); // ZzFX 77605
+}
+
 function pathRay(ctx, delta, line) {
-  let { x, y, animation } = line;
+  let { x1, y1, x2, y2, animation } = line;
   let biggestDim = Math.max(window.innerWidth, window.innerHeight);
   let maxLineWidth = biggestDim * 0.05;
-  let x2 = window.innerWidth - x;
-  let y2 = window.innerHeight - y;
+  //let x2 = window.innerWidth - x;
+  //let y2 = window.innerHeight - y;
 
   let percent = animate(delta, animation);
 
-  let angleRadians = Math.PI / 2 - Math.atan2(y2 - y, x2 - x);
+  let angleRadians = Math.PI / 2 - Math.atan2(y2 - y1, x2 - x1);
 
-  let length = Math.sqrt((x2 - x) * (x2 - x) + (y2 - y) * (y2 - y));
+  let length = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 
-  ctx.translate(x, y);
+  ctx.translate(x1, y1);
   ctx.rotate(-angleRadians);
   ctx.rect(
     (-maxLineWidth * percent * percent) / 2,
@@ -158,26 +650,26 @@ function pathRay(ctx, delta, line) {
     (length + maxLineWidth * 2) * percent
   );
   ctx.rotate(angleRadians);
-  ctx.translate(-x, -y);
+  ctx.translate(-x1, -y1);
 }
 
 /**
  * Draw a ray through the center that expands in width
  */
 function pathExpanding(ctx, delta, line) {
-  let { x, y, animation } = line;
-  let biggestDim = Math.max(window.innerWidth, window.innerHeight);
+  let { x1, y1, x2, y2, animation } = line;
+  let biggestDim = Math.max(window.innerWidth, window.innerHeight) * 2;
   let rayWidth = biggestDim * 0.05;
-  let x2 = window.innerWidth - x;
-  let y2 = window.innerHeight - y;
+  //let x2 = window.innerWidth - x;
+  //let y2 = window.innerHeight - y;
 
   let percent = animate(delta, animation);
 
-  let angleRadians = Math.PI / 2 - Math.atan2(y2 - y, x2 - x);
+  let angleRadians = Math.PI / 2 - Math.atan2(y2 - y1, x2 - x1);
 
-  let length = Math.sqrt((x2 - x) * (x2 - x) + (y2 - y) * (y2 - y));
+  let length = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 
-  ctx.translate(x, y);
+  ctx.translate(x1, y1);
   ctx.rotate(-angleRadians);
   ctx.rect(
     (-biggestDim * percent * percent - rayWidth) / 2,
@@ -186,7 +678,7 @@ function pathExpanding(ctx, delta, line) {
     length + rayWidth * 2
   );
   ctx.rotate(angleRadians);
-  ctx.translate(-x, -y);
+  ctx.translate(-x1, -y1);
 }
 
 // BACKGROUND HEARTS

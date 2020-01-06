@@ -22,7 +22,7 @@ Where was I...[flashing cursor]
 
 <click>
 
-Ahhhhhh a U??!?! Umm kill ITTTT!!!
+Ahhhhhh a U??!?! Umm... kill ITTTT!!!
 
 <Click on U>
 

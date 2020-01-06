@@ -4,6 +4,7 @@ body {
   padding: 0;
   overflow: hidden;
   background-color: lightblue;
+  position: absolute;
 }
 
 canvas {
@@ -12,4 +13,24 @@ canvas {
   left: 0;
   width: 100%;
   height: 100%;
+  z-index: 1;
+}
+
+div {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+
+  text-align: center;
+
+  font-size: 3em;
+  padding-top: 0.5em;
+
+  margin-left: 0.1em;
+  margin-right: 0.1em;
+
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
 }
