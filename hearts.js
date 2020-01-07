@@ -34,8 +34,8 @@ window.onload = function() {
       changeVal: 1
     },
     textAnim: {
-      ease: Math.easeOutQuad,
-      duration: 2000,
+      ease: Math.easeInOutQuad,
+      duration: 500,
       start: 0,
       startVal: 0,
       changeVal: 1
@@ -78,9 +78,15 @@ function render(canvas, textArea, gameState) {
     ctx.clip();
 
     // Draw background hearts
-    ctx.fillStyle = "red";
+    ctx.fillStyle = "lightcoral";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    drawBackground(ctx, delta, gameState.backgroundAnim, "pink", "red");
+    drawBackground(
+      ctx,
+      delta,
+      gameState.backgroundAnim,
+      "lightpink",
+      "lightcoral"
+    );
 
     // Loop hearts animation
     if (isFinished(delta, gameState.backgroundAnim)) {
@@ -111,8 +117,13 @@ function render(canvas, textArea, gameState) {
 
     let text = stateText[gameState.stage];
     let textPercent = animate(delta, gameState.textAnim);
-    textArea.innerText = text;
-    textArea.style = "opacity: " + textPercent;
+    if (text != "" && !gameState.click) {
+      textArea.innerText = text;
+      textArea.style = "opacity: " + textPercent;
+    } else {
+      textArea.innerText = text;
+      textArea.style = "opacity: 0";
+    }
 
     window.requestAnimationFrame(renderer);
   }
@@ -162,13 +173,8 @@ function eyeRender(ctx, gameState) {
     gameState.props.eye.stage == "ALIVE"
   ) {
     let xGoal = Math.random() * window.innerWidth;
-    let yGoal = Math.min(
-      Math.max(
-        y - Math.random() * window.innerHeight * 0.2 + window.innerHeight * 0.1,
-        window.innerHeight * 0.2
-      ),
-      window.innerHeight * 0.8
-    );
+    let yGoal =
+      Math.random() * window.innerHeight * 0.7 + window.innerHeight * 0.2;
 
     gameState.props.eye.xAnim.start = gameState.time;
     gameState.props.eye.xAnim.startVal = x;
@@ -226,9 +232,8 @@ function drawProp(ctx, rot, scale, x, y, prop) {
 function canvasClick(ctx, gameState) {
   let biggestDim = window.innerWidth;
   let scaleFactor = 0.1 * (biggestDim / 550);
-
   let clicker = function(event) {
-    let textAnimationFinished = isFinished(gameState.time, gameState.textAnim);
+    gameState.click = event;
     if (gameState.stage == "OPEN") {
       gameState.stage = "CRAB";
       gameState.textAnim.start = gameState.time;
@@ -273,11 +278,11 @@ function canvasClick(ctx, gameState) {
         },
         stage: "ALIVE"
       };
+      gameState.click = undefined;
     } else if (gameState.stage == "CRAB") {
       let crabRad = (550 * scaleFactor) / 2;
       let crabX = animate(gameState.time, gameState.props.crab.xAnim);
       let crabY = animate(gameState.time, gameState.props.crab.yAnim);
-      gameState.click = event;
       if (
         (event.clientX - crabX) * (event.clientX - crabX) +
           (event.clientY - crabY) * (event.clientY - crabY) <=
@@ -302,6 +307,7 @@ function canvasClick(ctx, gameState) {
         };
         gameState.textAnim.start = gameState.time + 1000;
         addLine(gameState, crabX, crabY);
+        gameState.click = undefined;
       }
     } else if (gameState.stage == "CRABKILL") {
       gameState.stage = "EYE";
@@ -316,7 +322,7 @@ function canvasClick(ctx, gameState) {
         Math.random() * window.innerHeight * 0.2 + window.innerHeight * 0.7;
       gameState.props.eye = {
         xAnim: {
-          ease: Math.easeInOutQuad,
+          ease: Math.easeInOutSine,
           duration: 1000,
           start: gameState.time,
           startVal: xpos,
@@ -345,11 +351,11 @@ function canvasClick(ctx, gameState) {
         },
         stage: "ALIVE"
       };
+      gameState.click = undefined;
     } else if (gameState.stage == "EYE") {
       let crabRad = (550 * scaleFactor) / 2;
       let crabX = animate(gameState.time, gameState.props.eye.xAnim);
       let crabY = animate(gameState.time, gameState.props.eye.yAnim);
-      gameState.click = event;
       if (
         (event.clientX - crabX) * (event.clientX - crabX) +
           (event.clientY - crabY) * (event.clientY - crabY) <=
@@ -374,6 +380,7 @@ function canvasClick(ctx, gameState) {
         };
         gameState.textAnim.start = gameState.time + 1000;
         addLine(gameState, crabX, crabY);
+        gameState.click = undefined;
       }
     } else if (gameState.stage == "EYEKILL") {
       gameState.stage = "U";
@@ -419,11 +426,11 @@ function canvasClick(ctx, gameState) {
         },
         stage: "ALIVE"
       };
+      gameState.click = undefined;
     } else if (gameState.stage == "U") {
       let crabRad = (550 * scaleFactor) / 2;
       let crabX = animate(gameState.time, gameState.props.u.xAnim);
       let crabY = animate(gameState.time, gameState.props.u.yAnim);
-      gameState.click = event;
       if (
         (event.clientX - crabX) * (event.clientX - crabX) +
           (event.clientY - crabY) * (event.clientY - crabY) <=
@@ -448,6 +455,7 @@ function canvasClick(ctx, gameState) {
         };
         gameState.textAnim.start = gameState.time + 1000;
         addLine(gameState, crabX, crabY);
+        gameState.click = undefined;
       }
     } else if (gameState.stage == "UKILL") {
       gameState.stage = "FINISH";
@@ -648,7 +656,7 @@ function pathRay(ctx, delta, line) {
     (-maxLineWidth * percent * percent) / 2,
     -maxLineWidth * 2,
     maxLineWidth * percent * percent,
-    (length + maxLineWidth * 4) * percent
+    length + maxLineWidth * 4
   );
   ctx.rotate(angleRadians);
   ctx.translate(-x1, -y1);

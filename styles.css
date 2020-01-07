@@ -5,6 +5,8 @@ body {
   overflow: hidden;
   background-color: lightblue;
   position: absolute;
+  width: 100%;
+  height: 100%;
 }
 
 canvas {
@@ -16,21 +18,43 @@ canvas {
   z-index: 1;
 }
 
-div {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+#textcontainer {
   z-index: 2;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin-top: 1em;
+}
+
+#text {
+  border: lightslategray 5px solid;
+
+  padding: 0.5em;
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+
+  border-radius: 10px;
+  background-color: lightpink;
+  color: lightcoral;
 
   text-align: center;
 
   font-size: 3em;
-  padding-top: 0.5em;
 
-  margin-left: 0.1em;
-  margin-right: 0.1em;
+  font-family: cursive;
+  font-weight: bold;
 
-  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  width: max-content;
+
+  box-shadow: 5px 10px 10px lightslategray;
+
+  text-shadow: 1px 1px 0 lightslategray;
+
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */
 }
