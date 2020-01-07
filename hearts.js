@@ -520,6 +520,7 @@ function canvasClick(ctx, gameState) {
   }
   gameState.clicker = clicker;
   window.addEventListener("click", clicker);
+  window.addEventListener("touchstart", clicker);
 }
 
 // LINES
