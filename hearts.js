@@ -233,6 +233,8 @@ function canvasClick(ctx, gameState) {
   let biggestDim = window.innerWidth;
   let scaleFactor = 0.1 * (biggestDim / 550);
   let clicker = function(event) {
+    clientX = event.clientX || event.touches[0].clientX;
+    clientY = event.clientY || event.touches[0].clientY;
     gameState.click = event;
     if (gameState.stage == "OPEN") {
       gameState.stage = "CRAB";
@@ -284,8 +286,8 @@ function canvasClick(ctx, gameState) {
       let crabX = animate(gameState.time, gameState.props.crab.xAnim);
       let crabY = animate(gameState.time, gameState.props.crab.yAnim);
       if (
-        (event.clientX - crabX) * (event.clientX - crabX) +
-          (event.clientY - crabY) * (event.clientY - crabY) <=
+        (clientX - crabX) * (clientX - crabX) +
+          (clientY - crabY) * (clientY - crabY) <=
         crabRad * crabRad
       ) {
         gameState.props.crab.xAnim.start = gameState.time;
@@ -357,8 +359,8 @@ function canvasClick(ctx, gameState) {
       let crabX = animate(gameState.time, gameState.props.eye.xAnim);
       let crabY = animate(gameState.time, gameState.props.eye.yAnim);
       if (
-        (event.clientX - crabX) * (event.clientX - crabX) +
-          (event.clientY - crabY) * (event.clientY - crabY) <=
+        (clientX - crabX) * (clientX - crabX) +
+          (clientY - crabY) * (clientY - crabY) <=
         crabRad * crabRad
       ) {
         gameState.props.eye.xAnim.start = gameState.time;
@@ -432,8 +434,8 @@ function canvasClick(ctx, gameState) {
       let crabX = animate(gameState.time, gameState.props.u.xAnim);
       let crabY = animate(gameState.time, gameState.props.u.yAnim);
       if (
-        (event.clientX - crabX) * (event.clientX - crabX) +
-          (event.clientY - crabY) * (event.clientY - crabY) <=
+        (clientX - crabX) * (clientX - crabX) +
+          (clientY - crabY) * (clientY - crabY) <=
         crabRad * crabRad
       ) {
         gameState.props.u.xAnim.start = gameState.time;
